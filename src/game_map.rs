@@ -11,17 +11,12 @@ pub enum TileType {
     Empty,
 }
 
-#[derive(Debug, Clone)]
-pub struct Tile {
-    tile_type: TileType,
-}
-
-impl Display for Tile {
+impl Display for TileType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{}",
-            match self.tile_type {
+            match self {
                 TileType::Wall => "#",
                 TileType::Empty => ".",
             }
@@ -30,10 +25,15 @@ impl Display for Tile {
 }
 
 #[derive(Debug, Clone)]
+pub struct Tile {
+    pub tile_type: TileType,
+}
+
+#[derive(Debug, Clone)]
 pub struct GameMap {
     tiles: Vec<Tile>,
-    width: u32,
-    height: u32,
+    pub width: u32,
+    pub height: u32,
 }
 
 impl GameMap {
@@ -77,20 +77,5 @@ impl GameMap {
             .clone();
 
         Ok(tile)
-    }
-
-    pub fn print(&self) {
-        println!(
-            "MAP:\n{}",
-            (0..self.height)
-                .map(|y| {
-                    (0..self.width)
-                        .map(|x| self.get_tile(x, y).expect("Failed to get tile").to_string())
-                        .collect::<Vec<String>>()
-                        .join("")
-                })
-                .collect::<Vec<String>>()
-                .join("\n")
-        );
     }
 }
