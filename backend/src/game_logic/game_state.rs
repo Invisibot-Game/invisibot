@@ -2,14 +2,16 @@ use std::collections::HashMap;
 
 use crate::{
     coord,
-    game_map::GameMap,
     player::{create_players, Player, PlayerId},
     utils::{coordinate::Coordinate, direction::Direction},
 };
 
+use super::game_map::GameMap;
+
+#[derive(Debug, Clone)]
 pub struct GameState {
     pub map: GameMap,
-    players: HashMap<PlayerId, Player>,
+    pub players: HashMap<PlayerId, Player>,
 }
 
 impl GameState {
@@ -83,18 +85,16 @@ fn next_dir(map: &GameMap, player: &Player) -> Direction {
     let x = player.get_pos().x;
     let y = player.get_pos().y;
 
-    let top_edge = map.height - 2;
+    let bottom_edge = map.height - 2;
     let right_edge = map.width - 2;
 
     match (x, y) {
-        (1, 1) => Direction::Up,
-        (1, _) if y == top_edge => Direction::Right,
-        (1, _) => Direction::Up,
-        (_, 1) if x == right_edge => Direction::Left,
-        (_, 1) => Direction::Up,
-        (_, _) if x == right_edge && y == top_edge => Direction::Down,
-        (_, _) if x == right_edge => Direction::Down,
-        (_, _) if y == top_edge => Direction::Right,
-        (_, _) => Direction::Left,
+        (1, 1) => Direction::Down,
+        (1, _) if y == bottom_edge => Direction::Right,
+        (1, _) => Direction::Down,
+        (_, 1) => Direction::Left,
+        (_, _) if x == right_edge => Direction::Up,
+        (_, _) if y == bottom_edge => Direction::Right,
+        (_, _) => Direction::Up,
     }
 }

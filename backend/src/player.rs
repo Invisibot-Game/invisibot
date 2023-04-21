@@ -24,8 +24,8 @@ impl Player {
 
     pub fn move_dir(&mut self, dir: Direction) {
         match dir {
-            Direction::Up => self.pos = coord!(self.pos.x, self.pos.y + 1),
-            Direction::Down => self.pos = coord!(self.pos.x, self.pos.y - 1),
+            Direction::Up => self.pos = coord!(self.pos.x, self.pos.y - 1),
+            Direction::Down => self.pos = coord!(self.pos.x, self.pos.y + 1),
             Direction::Right => self.pos = coord!(self.pos.x + 1, self.pos.y),
             Direction::Left => self.pos = coord!(self.pos.x - 1, self.pos.y),
         }

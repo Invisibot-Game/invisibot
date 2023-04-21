@@ -1,0 +1,99 @@
+.container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.board {
+    border: 4px solid white;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.details {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.buttonGroup {
+    height: 64px;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    :last-child {
+        border-top-right-radius: 32px;
+        border-bottom-right-radius: 32px;
+    }
+
+    :first-child {
+        border-top-left-radius: 32px;
+        border-bottom-left-radius: 32px;
+    }
+}
+
+.speedButton {
+    height: 100%;
+    width: 128px;
+    background-color: white;
+    color: black;
+    font-weight: bolder;
+    border: 1px solid black;
+    cursor: pointer;
+    box-shadow: none;
+
+    &:hover {
+        background-color: rgba(255, 255, 255, 0.8);
+    }
+
+    &:active {
+        background-color: rgba(255, 255, 255, 0.5);
+    }
+}
+
+.tile {
+    width: 56px;
+    height: 56px;
+    border: 2px solid white;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+.wall {
+    background-color: rgba(255, 100, 100, 0.3);
+    width: 100%;
+    height: 100%;
+}
+
+.empty {
+    background-color: rgba(100, 255, 100, 0.3);
+    width: 100%;
+    height: 100%;
+}
+
+.player {
+    width: 60%;
+    height: 60%;
+    border-radius: 50%;
+}
+
+.player0 {
+    background-color: rgba(100, 100, 255, 0.6);
+}
+
+.player1 {
+    background-color: rgba(100, 255, 255, 0.6);
+}
+
+.gridRow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}

@@ -1,11 +1,13 @@
 use std::fmt::Display;
 
-use crate::{
+use serde::Serialize;
+
+use crate::utils::{
+    coordinate::Coordinate,
     game_error::{GameError, GameResult},
-    utils::coordinate::Coordinate,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum TileType {
     Wall,
     Empty,
@@ -31,7 +33,7 @@ pub struct Tile {
 
 #[derive(Debug, Clone)]
 pub struct GameMap {
-    tiles: Vec<Tile>,
+    pub tiles: Vec<Tile>,
     pub width: u32,
     pub height: u32,
 }
