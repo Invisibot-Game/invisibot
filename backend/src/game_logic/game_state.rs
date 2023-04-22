@@ -5,7 +5,10 @@ use crate::{
     utils::{coordinate::Coordinate, direction::Direction, game_error::GameResult},
 };
 
-use super::game_map::{GameMap, TileType};
+use super::{
+    game_map::{GameMap, TileType},
+    player::{PlayerClient, PlayerClients},
+};
 
 #[derive(Debug, Clone)]
 pub struct GameState {
@@ -16,7 +19,7 @@ pub struct GameState {
 impl GameState {
     pub fn new() -> Self {
         Self {
-            map: GameMap::new(7, 7),
+            map: GameMap::new(24, 24),
             players: create_players(),
         }
     }
@@ -37,13 +40,22 @@ impl GameState {
         }
     }
 
-    pub fn run_round(&self) -> GameResult<Self> {
+    pub fn run_round(&self, player_clients: &mut PlayerClients) -> GameResult<Self> {
+        let requested_directions = self
+            .players
+            .iter()
+            .map(|(id, _)| {
+                let dir = player_clients.play_round(&self, id);
+                (id.clone(), dir)
+            })
+            .collect::<HashMap<PlayerId, Direction>>();
+
         let next_round_players = self
             .players
             .iter()
             .map(|(id, p)| (id.clone(), p.clone()))
             .map(|(id, mut p)| {
-                let dir = next_dir(&self.map, &p);
+                let dir = player_clients.play_round(&self, p.get_id());
 
                 let new_tile = self
                     .map
@@ -75,23 +87,5 @@ impl GameState {
         };
 
         tile.tile_type != TileType::Wall
-    }
-}
-
-fn next_dir(map: &GameMap, player: &Player) -> Direction {
-    let x = player.get_pos().x;
-    let y = player.get_pos().y;
-
-    let bottom_edge = map.height - 2;
-    let right_edge = map.width - 2;
-
-    match (x, y) {
-        (1, 1) => Direction::Down,
-        (1, _) if y == bottom_edge => Direction::Right,
-        (1, _) => Direction::Down,
-        (_, 1) => Direction::Left,
-        (_, _) if x == right_edge => Direction::Up,
-        (_, _) if y == bottom_edge => Direction::Right,
-        (_, _) => Direction::Up,
     }
 }

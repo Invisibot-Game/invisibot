@@ -32,7 +32,7 @@ pub fn create_players() -> HashMap<PlayerId, Player> {
         first_player_id,
         Player {
             id: first_player_id,
-            pos: coord!(4, 4),
+            pos: coord!(4, 3),
         },
     );
 

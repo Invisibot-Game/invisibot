@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use crate::{
     api::response::GameResponse,
-    game_logic::{game_map::TileType, game_state::GameState},
+    game_logic::{game_map::TileType, game_state::GameState, player::PlayerClients},
     utils::game_error::GameResult,
 };
 
@@ -64,10 +64,12 @@ pub fn get_game() -> GameResponse<RoundsResponse> {
 }
 
 fn run_game(initial_state: GameState) -> GameResult<Vec<GameState>> {
+    let mut player_clients = PlayerClients::new();
+
     let mut states = vec![initial_state.clone()];
     let mut state: GameState = initial_state;
-    for _ in 0..128 {
-        let new_state = state.run_round()?;
+    for _ in 1..400 {
+        let new_state = state.run_round(&mut player_clients)?;
         states.push(state);
         state = new_state;
     }
