@@ -6,7 +6,7 @@
 }
 
 .board {
-    border: 4px solid white;
+    border: 2px solid white;
     border-radius: 5px;
     display: flex;
     flex-direction: row;
@@ -57,13 +57,16 @@
 }
 
 .tile {
-    width: 56px;
-    height: 56px;
-    border: 2px solid white;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
+    width: 24px;
+    height: 24px;
+    border: 1px solid white;
+
+    & > div {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+    }
 }
 
 .wall {
@@ -73,7 +76,7 @@
 }
 
 .empty {
-    background-color: rgba(100, 255, 100, 0.3);
+    background-color: rgba(100, 255, 100, 0.2);
     width: 100%;
     height: 100%;
 }
@@ -85,11 +88,11 @@
 }
 
 .player0 {
-    background-color: rgba(100, 100, 255, 0.6);
+    background-color: rgba(100, 100, 255, 1);
 }
 
 .player1 {
-    background-color: rgba(100, 255, 255, 0.6);
+    background-color: rgba(100, 255, 255, 1);
 }
 
 .gridRow {

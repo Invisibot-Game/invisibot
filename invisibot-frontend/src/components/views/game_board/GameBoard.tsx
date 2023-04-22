@@ -21,12 +21,14 @@ export const GameBoard = ({ rounds }: GameBoardProps) => {
       }, speed);
     }
 
-    if (round >= rounds.length) {
+    if (round >= rounds.length - 1) {
       setGameOver(true);
     }
   }, [round, speed]);
 
-  let state: Round = rounds[round];
+  const state: Round = rounds[round];
+
+  console.log(`ROUND ${round} / ${rounds.length}`);
 
   return (
     <div className={styles.container}>
@@ -34,20 +36,18 @@ export const GameBoard = ({ rounds }: GameBoardProps) => {
         {[...Array(state.width)].map((_, x) => (
           <div key={`row-${x}`} className={styles.gridRow}>
             {[...Array(state.height)].map((_, y) => {
-              let index = x * state.height + y;
-              let tile = state.tiles.at(index)!!;
-              let player = getPlayerAt(state, x, y);
-              let tileStyle = player
-                ? styles.player
-                : tile === TileType.Wall
-                ? styles.wall
-                : styles.Empty;
+              const index = x * state.height + y;
+              const tile = state.tiles.at(index)!!;
+              const tileStyle =
+                tile === TileType.Wall ? styles.wall : styles.empty;
 
-              let playerColor = getPlayerColor(player?.id);
+              const player = getPlayerAt(state, x, y);
 
               return (
                 <div key={`tile-${x}-${y}`} className={styles.tile}>
-                  <div className={`${tileStyle} ${playerColor}`} />
+                  <div className={tileStyle}>
+                    <Player player={player} />
+                  </div>
                 </div>
               );
             })}
@@ -87,6 +87,15 @@ export const GameBoard = ({ rounds }: GameBoardProps) => {
       </div>
     </div>
   );
+};
+
+const Player = ({ player }: { player: Player | undefined }) => {
+  const playerColor = getPlayerColor(player?.id);
+  if (playerColor) {
+    return <div className={`${styles.player} ${playerColor}`} />;
+  }
+
+  return <div />;
 };
 
 function getPlayerColor(id?: number): string {
