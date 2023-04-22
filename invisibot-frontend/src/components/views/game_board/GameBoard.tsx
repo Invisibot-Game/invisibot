@@ -19,7 +19,9 @@ export const GameBoard = ({ rounds }: GameBoardProps) => {
       setTimeout(() => {
         setRound(round + 1);
       }, speed);
-    } else {
+    }
+
+    if (round >= rounds.length) {
       setGameOver(true);
     }
   }, [round, speed]);

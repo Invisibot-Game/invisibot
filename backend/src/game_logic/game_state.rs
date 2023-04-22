@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 
 use crate::{
-    coord,
     player::{create_players, Player, PlayerId},
-    utils::{coordinate::Coordinate, direction::Direction},
+    utils::{coordinate::Coordinate, direction::Direction, game_error::GameResult},
 };
 
-use super::game_map::GameMap;
+use super::game_map::{GameMap, TileType};
 
 #[derive(Debug, Clone)]
 pub struct GameState {
@@ -22,12 +21,12 @@ impl GameState {
         }
     }
 
-    pub fn get_player_by_coordinate(&self, coordinate: Coordinate) -> Option<Player> {
+    pub fn get_player_by_coord(&self, coord: &Coordinate) -> Option<Player> {
         if let Some(&p) = self
             .players
             .iter()
             .map(|(_, p)| p)
-            .filter(|&p| p.get_pos().x == coordinate.x && p.get_pos().y == coordinate.y)
+            .filter(|&p| p.get_pos().x == coord.x && p.get_pos().y == coord.y)
             .collect::<Vec<&Player>>()
             .first()
         {
@@ -38,46 +37,44 @@ impl GameState {
         }
     }
 
-    pub fn print_map(&self) {
-        let map_str = (0..self.map.height)
-            .map(|y| {
-                (0..self.map.width)
-                    .map(|x| {
-                        if let Some(p) = self.get_player_by_coordinate(coord!(x, y)) {
-                            p.get_id().to_string()
-                        } else {
-                            self.map
-                                .get_tile(x, y)
-                                .expect("Failed to get tile")
-                                .tile_type
-                                .to_string()
-                        }
-                    })
-                    .collect::<Vec<String>>()
-                    .join("")
-            })
-            .collect::<Vec<String>>()
-            .join("\n");
-
-        println!("MAP:\n{map_str}");
-    }
-
-    pub fn run_round(&self) -> Self {
+    pub fn run_round(&self) -> GameResult<Self> {
         let next_round_players = self
             .players
             .iter()
             .map(|(id, p)| (id.clone(), p.clone()))
             .map(|(id, mut p)| {
                 let dir = next_dir(&self.map, &p);
-                p.move_dir(dir);
-                (id, p)
-            })
-            .collect::<HashMap<PlayerId, Player>>();
 
-        Self {
+                let new_tile = self
+                    .map
+                    .get_tile_translated(p.get_pos(), &dir)
+                    .unwrap_or(self.map.get_tile_by_coord(p.get_pos())?);
+
+                if self.is_pos_free(&new_tile.coord) {
+                    p.move_to(new_tile.coord);
+                }
+                Ok((id, p))
+            })
+            .collect::<GameResult<HashMap<PlayerId, Player>>>()?;
+
+        Ok(Self {
             map: self.map.clone(),
             players: next_round_players,
+        })
+    }
+
+    fn is_pos_free(&self, pos: &Coordinate) -> bool {
+        if let Some(_) = self.get_player_by_coord(pos) {
+            return false;
         }
+
+        let tile = if let Ok(tile) = self.map.get_tile_by_coord(pos) {
+            tile
+        } else {
+            return false;
+        };
+
+        tile.tile_type != TileType::Wall
     }
 }
 

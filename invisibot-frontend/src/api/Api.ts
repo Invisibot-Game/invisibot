@@ -17,14 +17,30 @@ export type Response<T> = {
   failedToReachBackend: boolean;
 };
 
+interface RawApiResponse<T> {
+  data?: T;
+  success: boolean;
+  error?: string;
+}
+
 function handleResponse<T>(
-  response: Promise<AxiosResponse<T>>
+  response: Promise<AxiosResponse<RawApiResponse<T>>>
 ): Promise<Response<T>> {
   return response
     .then((res) => {
+      let resp = res.data;
+
+      if (!resp.success) {
+        return {
+          success: false,
+          failedToReachBackend: false,
+          error: resp.error,
+        };
+      }
+
       if (res.status < 300) {
         return {
-          data: res.data,
+          data: resp.data,
           success: true,
           failedToReachBackend: false,
         };

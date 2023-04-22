@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{
-    coord,
-    utils::{coordinate::Coordinate, direction::Direction},
-};
+use crate::{coord, utils::coordinate::Coordinate};
 
 pub type PlayerId = u32;
 
@@ -22,13 +19,8 @@ impl Player {
         &self.pos
     }
 
-    pub fn move_dir(&mut self, dir: Direction) {
-        match dir {
-            Direction::Up => self.pos = coord!(self.pos.x, self.pos.y - 1),
-            Direction::Down => self.pos = coord!(self.pos.x, self.pos.y + 1),
-            Direction::Right => self.pos = coord!(self.pos.x + 1, self.pos.y),
-            Direction::Left => self.pos = coord!(self.pos.x - 1, self.pos.y),
-        }
+    pub fn move_to(&mut self, coord: Coordinate) {
+        self.pos = coord;
     }
 }
 

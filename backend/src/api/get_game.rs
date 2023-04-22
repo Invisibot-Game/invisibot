@@ -1,10 +1,13 @@
-use rocket::serde::json::Json;
 use serde::Serialize;
 
-use crate::game_logic::{game_map::TileType, game_state::GameState};
+use crate::{
+    api::response::GameResponse,
+    game_logic::{game_map::TileType, game_state::GameState},
+    utils::game_error::GameResult,
+};
 
 #[derive(Debug, Clone, Serialize)]
-pub struct GameResponse {
+pub struct RoundsResponse {
     rounds: Vec<RoundResponse>,
 }
 
@@ -24,9 +27,12 @@ pub struct PlayerResponse {
 }
 
 #[get("/game")]
-pub fn get_game() -> Json<GameResponse> {
+pub fn get_game() -> GameResponse<RoundsResponse> {
     let game_state = GameState::new();
-    let states = run_game(game_state);
+    let states = match run_game(game_state) {
+        Ok(s) => s,
+        Err(e) => return GameResponse::err(e.to_string()),
+    };
 
     let rounds = states
         .into_iter()
@@ -54,17 +60,17 @@ pub fn get_game() -> Json<GameResponse> {
         })
         .collect::<Vec<RoundResponse>>();
 
-    Json(GameResponse { rounds })
+    GameResponse::ok(RoundsResponse { rounds })
 }
 
-fn run_game(initial_state: GameState) -> Vec<GameState> {
+fn run_game(initial_state: GameState) -> GameResult<Vec<GameState>> {
     let mut states = vec![initial_state.clone()];
     let mut state: GameState = initial_state;
     for _ in 0..128 {
-        let new_state = state.run_round();
+        let new_state = state.run_round()?;
         states.push(state);
         state = new_state;
     }
 
-    states
+    Ok(states)
 }

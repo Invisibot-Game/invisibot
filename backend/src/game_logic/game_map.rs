@@ -2,12 +2,16 @@ use std::fmt::Display;
 
 use serde::Serialize;
 
-use crate::utils::{
-    coordinate::Coordinate,
-    game_error::{GameError, GameResult},
+use crate::{
+    coord,
+    utils::{
+        coordinate::Coordinate,
+        direction::Direction,
+        game_error::{GameError, GameResult},
+    },
 };
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub enum TileType {
     Wall,
     Empty,
@@ -28,6 +32,7 @@ impl Display for TileType {
 
 #[derive(Debug, Clone)]
 pub struct Tile {
+    pub coord: Coordinate,
     pub tile_type: TileType,
 }
 
@@ -43,6 +48,7 @@ impl GameMap {
         let tiles = (0..height)
             .map(|y| {
                 (0..width).map(move |x| Tile {
+                    coord: coord!(x, y),
                     tile_type: if x == 0 || y == 0 || x == (width - 1) || y == (height - 1) {
                         TileType::Wall
                     } else {
@@ -60,7 +66,7 @@ impl GameMap {
         }
     }
 
-    pub fn get_tile_coord(&self, coord: &Coordinate) -> GameResult<Tile> {
+    pub fn get_tile_by_coord(&self, coord: &Coordinate) -> GameResult<Tile> {
         return self.get_tile(coord.x, coord.y);
     }
 
@@ -79,5 +85,16 @@ impl GameMap {
             .clone();
 
         Ok(tile)
+    }
+
+    pub fn get_tile_translated(&self, coord: &Coordinate, dir: &Direction) -> GameResult<Tile> {
+        let translated_cord = match dir {
+            Direction::Up => coord!(coord.x, coord.y - 1),
+            Direction::Down => coord!(coord.x, coord.y + 1),
+            Direction::Right => coord!(coord.x + 1, coord.y),
+            Direction::Left => coord!(coord.x - 1, coord.y),
+        };
+
+        self.get_tile_by_coord(&translated_cord)
     }
 }
