@@ -3,7 +3,7 @@ import styles from "./GameBoard.module.scss";
 import { TileType } from "@/api/TileType";
 import { Player } from "@/api/Player";
 import { useEffect, useState } from "react";
-import { LoadingBar } from "@/components/elements/loading_bar/LoadingBar";
+import { RoundBar } from "@/components/elements/round_bar/RoundBar";
 
 type GameBoardProps = {
   rounds: Round[];
@@ -21,14 +21,10 @@ export const GameBoard = ({ rounds }: GameBoardProps) => {
       }, speed);
     }
 
-    if (round >= rounds.length - 1) {
-      setGameOver(true);
-    }
+    setGameOver(round >= rounds.length - 1);
   }, [round, speed]);
 
   const state: Round = rounds[round];
-
-  console.log(`ROUND ${round} / ${rounds.length}`);
 
   return (
     <div className={styles.container}>
@@ -57,8 +53,14 @@ export const GameBoard = ({ rounds }: GameBoardProps) => {
 
       <div>
         <div className={styles.details}>
-          <p>{`${round + 1}/${rounds.length}`}</p>
-          <LoadingBar curr={round + 1} total={rounds.length} />
+          <RoundBar
+            curr={round + 1}
+            total={rounds.length}
+            setRound={(num) => {
+              setRound(num - 1);
+              setSpeed(null); // Pause the game
+            }}
+          />
           <p>{gameOver ? "Game over" : "Game running"}</p>
           <div className={styles.buttonGroup}>
             <button
