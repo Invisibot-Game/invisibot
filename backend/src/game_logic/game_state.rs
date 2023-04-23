@@ -90,7 +90,7 @@ impl GameState {
                         requested_destinations,
                         tile_collisions,
                     ) {
-                        acc.insert(id.clone(), Player::update_pos(player, initial_move));
+                        acc.insert(id.clone(), Player::update_pos(player, initial_move, false));
                     }
 
                     acc
@@ -108,12 +108,12 @@ impl GameState {
             if let Some(req) = requested_destinations.get(&id) {
                 if !pos_contains_player(&next_round_players, req) {
                     // Currently favours the player first in the list, might want to change this to the player who is quickest to respond in the future? or smth
-                    next_round_players.insert(id, Player::update_pos(&player, req.clone()));
+                    next_round_players.insert(id, Player::update_pos(&player, req.clone(), true));
                     return;
                 }
             }
 
-            next_round_players.insert(id.clone(), player.clone());
+            next_round_players.insert(id.clone(), Player::update_visibility(&player, true));
         });
 
         let prev_players = self.players.len();

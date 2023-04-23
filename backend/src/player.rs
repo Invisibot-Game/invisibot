@@ -24,11 +24,19 @@ impl Player {
         self.visible
     }
 
-    pub fn update_pos(player: &Player, new_pos: Coordinate) -> Self {
+    pub fn update_pos(player: &Player, new_pos: Coordinate, visible: bool) -> Self {
         Self {
             id: player.id.clone(),
             pos: new_pos,
-            visible: player.visible,
+            visible,
+        }
+    }
+
+    pub fn update_visibility(player: &Player, visible: bool) -> Self {
+        Self {
+            id: player.id.clone(),
+            pos: player.pos.clone(),
+            visible,
         }
     }
 }
