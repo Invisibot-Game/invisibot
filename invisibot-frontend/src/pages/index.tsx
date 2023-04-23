@@ -3,6 +3,7 @@ import { GameBoard } from "@/components/views/game_board/GameBoard";
 import { GetServerSideProps } from "next";
 import { Api } from "@/api/Api";
 import { Round } from "@/api/Round";
+import { ErrorHeader } from "@/components/views/error_header/ErrorHeader";
 
 type HomeProps = {
   rounds?: Round[];
@@ -11,11 +12,11 @@ type HomeProps = {
 
 export default function Home({ rounds, error }: HomeProps) {
   if (error) {
-    return <div>ERROR {error}</div>;
+    return <ErrorHeader error={error} />;
   }
 
   if (!rounds) {
-    return <div>Failed to reach backend</div>;
+    return <ErrorHeader error={"Failed to reach backend"} />;
   }
 
   return (
@@ -39,7 +40,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
   return {
     props: {
-      rounds: response.data.rounds,
+      rounds: response.data!!.rounds,
     },
   };
 };
