@@ -19,8 +19,11 @@ impl Player {
         &self.pos
     }
 
-    pub fn move_to(&mut self, coord: Coordinate) {
-        self.pos = coord;
+    pub fn update_pos(player: &Player, new_pos: Coordinate) -> Self {
+        Self {
+            id: player.id.clone(),
+            pos: new_pos,
+        }
     }
 }
 

@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, Serialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub enum TileType {
     Wall,
     Empty,
@@ -30,7 +30,7 @@ impl Display for TileType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Tile {
     pub coord: Coordinate,
     pub tile_type: TileType,
