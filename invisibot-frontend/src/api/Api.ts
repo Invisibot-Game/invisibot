@@ -1,11 +1,12 @@
 import axios, { AxiosResponse } from "axios";
+import { Round } from "./Round";
 
 axios.defaults.baseURL = "http://0.0.0.0:8000/api";
 
 export const Api = {
   game: {
     get: () => {
-      return handleResponse(axios.get("/game"));
+      return handleResponse<{ rounds: Round[] }>(axios.get("/game"));
     },
   },
 };

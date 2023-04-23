@@ -24,6 +24,7 @@ pub struct PlayerResponse {
     id: u32,
     x: u32,
     y: u32,
+    visible: bool,
 }
 
 #[get("/game")]
@@ -48,6 +49,7 @@ pub fn get_game() -> GameResponse<RoundsResponse> {
                         id: p.get_id().clone(),
                         x: pos.x,
                         y: pos.y,
+                        visible: p.is_visible(),
                     }
                 })
                 .collect::<Vec<PlayerResponse>>(),

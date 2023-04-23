@@ -69,6 +69,10 @@
     }
 }
 
+.invisible {
+    border: 2px solid red;
+}
+
 .wall {
     background-color: rgba(255, 100, 100, 0.3);
     width: 100%;

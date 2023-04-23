@@ -93,8 +93,9 @@ export const GameBoard = ({ rounds }: GameBoardProps) => {
 
 const Player = ({ player }: { player: Player | undefined }) => {
   const playerColor = getPlayerColor(player?.id);
+  const invisible = player?.visible === false ? styles.invisible : "";
   if (playerColor) {
-    return <div className={`${styles.player} ${playerColor}`} />;
+    return <div className={`${styles.player} ${playerColor} ${invisible}`} />;
   }
 
   return <div />;

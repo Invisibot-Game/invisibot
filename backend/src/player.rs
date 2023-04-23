@@ -8,6 +8,7 @@ pub type PlayerId = u32;
 pub struct Player {
     id: PlayerId,
     pos: Coordinate,
+    visible: bool,
 }
 
 impl Player {
@@ -19,10 +20,15 @@ impl Player {
         &self.pos
     }
 
+    pub fn is_visible(&self) -> bool {
+        self.visible
+    }
+
     pub fn update_pos(player: &Player, new_pos: Coordinate) -> Self {
         Self {
             id: player.id.clone(),
             pos: new_pos,
+            visible: player.visible,
         }
     }
 }
@@ -36,6 +42,7 @@ pub fn create_players() -> HashMap<PlayerId, Player> {
         Player {
             id: first_player_id,
             pos: coord!(4, 3),
+            visible: false,
         },
     );
 
@@ -45,6 +52,7 @@ pub fn create_players() -> HashMap<PlayerId, Player> {
         Player {
             id: second_player_id,
             pos: coord!(1, 2),
+            visible: false,
         },
     );
 
