@@ -119,7 +119,7 @@ impl GameState {
         let prev_players = self.players.len();
         let new_players = next_round_players.len();
         if prev_players != new_players {
-            error!("Player count missmatch between round! Prev {prev_players}, new {new_players}");
+            println!("ERROR: Player count missmatch between round! Prev {prev_players}, new {new_players}");
         }
         next_round_players
     }
@@ -146,7 +146,7 @@ impl GameState {
 
         match collisions.get(req) {
             None => {
-                warn!("Coordinate was not in collision map {req:?}\n\nMAP: {collisions:?}");
+                println!("WARNING: Coordinate was not in collision map {req:?}\n\nMAP: {collisions:?}");
                 Some((curr.clone(), false))
             }
             Some(1) => Some((req.clone(), false)), // Noone else wanted to move here, let's just do it!

@@ -5,9 +5,6 @@ use api::get_game::get_game;
 extern crate rocket;
 
 mod api;
-mod game_logic;
-mod player;
-mod utils;
 
 #[launch]
 async fn rocket() -> _ {

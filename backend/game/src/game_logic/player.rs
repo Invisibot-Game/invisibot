@@ -20,7 +20,7 @@ impl PlayerClients {
             0 => self.player_one.play_round(game_state, player_id),
             1 => self.player_two.play_round(game_state, player_id),
             _ => {
-                error!("PlayerId out of scope");
+                println!("Error: PlayerId out of scope");
                 Direction::Down
             }
         }

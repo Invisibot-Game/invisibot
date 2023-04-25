@@ -1,9 +1,8 @@
+use invisibot_game::{game_logic::{game_map::TileType, game_state::GameState, player::PlayerClients}, utils::game_error::GameResult};
 use serde::Serialize;
 
 use crate::{
     api::response::GameResponse,
-    game_logic::{game_map::TileType, game_state::GameState, player::PlayerClients},
-    utils::game_error::GameResult,
 };
 
 #[derive(Debug, Clone, Serialize)]
@@ -40,9 +39,9 @@ pub fn get_game() -> GameResponse<RoundsResponse> {
         .map(|s| RoundResponse {
             width: s.map.width,
             height: s.map.height,
-            players: s
+            players: s 
                 .players
-                .into_iter()
+                .into_iter() 
                 .map(|(_, p)| {
                     let pos = p.get_pos();
                     PlayerResponse {
