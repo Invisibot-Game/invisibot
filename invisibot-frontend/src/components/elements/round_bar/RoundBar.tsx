@@ -10,7 +10,7 @@ const ROUND_BAR_ID = "roundBar";
 export const RoundBar = ({ curr, total, setRound }: LoadingBarProps) => {
   return (
     <div>
-      <label htmlFor={ROUND_BAR_ID}> {`${curr}/${total}`} </label>
+      <label htmlFor={ROUND_BAR_ID} className={styles.roundBarLabel}> {`${curr}/${total}`} </label>
       <input
         id={ROUND_BAR_ID}
         type="range"
