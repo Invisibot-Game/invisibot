@@ -84,13 +84,13 @@ impl GameState {
             self.players
                 .iter()
                 .fold(HashMap::new(), |mut acc, (id, player)| {
-                    if let Some(initial_move) = self.get_initial_move(
+                    if let Some((initial_move, should_be_visible)) = self.get_initial_move(
                         player.get_pos(),
                         id,
                         requested_destinations,
                         tile_collisions,
                     ) {
-                        acc.insert(id.clone(), Player::update_pos(player, initial_move, false));
+                        acc.insert(id.clone(), Player::update_pos(player, initial_move, should_be_visible));
                     }
 
                     acc
@@ -131,25 +131,25 @@ impl GameState {
         player_id: &PlayerId,
         requested: &HashMap<PlayerId, Coordinate>,
         collisions: &HashMap<Coordinate, usize>,
-    ) -> Option<Coordinate> {
+    ) -> Option<(Coordinate, bool)> {
         let req = if let Some(tile) = requested.get(player_id) {
             tile
         } else {
             // No new destination was requested? Just stay in place
-            return Some(curr.clone());
+            return Some((curr.clone(), false));
         };
 
         if !self.is_pos_walkable(req) || self.pos_contains_player(req) {
             // Either a wall or a player is blocking us from going there.
-            return Some(curr.clone());
+            return Some((curr.clone(), true));
         }
 
         match collisions.get(req) {
             None => {
                 warn!("Coordinate was not in collision map {req:?}\n\nMAP: {collisions:?}");
-                Some(curr.clone())
+                Some((curr.clone(), false))
             }
-            Some(1) => Some(req.clone()),
+            Some(1) => Some((req.clone(), false)), // Noone else wanted to move here, let's just do it!
             Some(_) => None, // Deal with collisions later
         }
     }

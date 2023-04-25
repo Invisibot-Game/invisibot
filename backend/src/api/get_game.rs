@@ -70,7 +70,7 @@ fn run_game(initial_state: GameState) -> GameResult<Vec<GameState>> {
 
     let mut states = vec![initial_state.clone()];
     let mut state: GameState = initial_state;
-    for _ in 1..6 {
+    for _ in 1..7 {
         let new_state = state.run_round(&mut player_clients)?;
         states.push(state);
         state = new_state;
