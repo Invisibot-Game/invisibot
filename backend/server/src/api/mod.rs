@@ -1,2 +1,2 @@
-pub mod get_game;
+pub mod game;
 pub mod response;

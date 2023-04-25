@@ -16,3 +16,6 @@ dotenv = "0.15"
 
 [dependencies.invisibot_game]
 path = "../game"
+
+[dependencies.websocket_api]
+path = "../websocket-api"
