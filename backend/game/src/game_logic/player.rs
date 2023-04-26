@@ -5,6 +5,8 @@ use super::game_state::GameState;
 pub struct PlayerClients {
     player_one: PlayerOne,
     player_two: PlayerTwo,
+    player_three: PlayerOne,
+    player_four: PlayerTwo,
 }
 
 impl PlayerClients {
@@ -12,6 +14,8 @@ impl PlayerClients {
         Self {
             player_one: PlayerOne,
             player_two: PlayerTwo,
+            player_three: PlayerOne,
+            player_four: PlayerTwo,
         }
     }
 
@@ -19,6 +23,8 @@ impl PlayerClients {
         match player_id {
             0 => self.player_one.play_round(game_state, player_id),
             1 => self.player_two.play_round(game_state, player_id),
+            2 => self.player_three.play_round(game_state, player_id),
+            3 => self.player_four.play_round(game_state, player_id),
             _ => {
                 println!("Error: PlayerId out of scope");
                 Direction::Down

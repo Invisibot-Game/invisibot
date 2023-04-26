@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
+use rand::{seq::SliceRandom, thread_rng};
+
 use crate::{
-    player::{create_players, Player, PlayerId},
+    player::{Player, PlayerId},
     utils::{coordinate::Coordinate, game_error::GameResult},
 };
 
@@ -17,11 +19,11 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn new() -> Self {
-        Self {
-            map: GameMap::new(24, 24),
-            players: create_players(),
-        }
+    pub fn new(player_ids: Vec<PlayerId>) -> Self {
+        let map = GameMap::new(24, 24);
+        let players = create_players(&map, player_ids);
+
+        Self { map, players }
     }
 
     pub fn run_round(&self, player_clients: &mut PlayerClients) -> GameResult<Self> {
@@ -90,7 +92,10 @@ impl GameState {
                         requested_destinations,
                         tile_collisions,
                     ) {
-                        acc.insert(id.clone(), Player::update_pos(player, initial_move, should_be_visible));
+                        acc.insert(
+                            id.clone(),
+                            Player::update_pos(player, initial_move, should_be_visible),
+                        );
                     }
 
                     acc
@@ -146,11 +151,13 @@ impl GameState {
 
         match collisions.get(req) {
             None => {
-                println!("WARNING: Coordinate was not in collision map {req:?}\n\nMAP: {collisions:?}");
+                println!(
+                    "WARNING: Coordinate was not in collision map {req:?}\n\nMAP: {collisions:?}"
+                );
                 Some((curr.clone(), false))
             }
             Some(1) => Some((req.clone(), false)), // Noone else wanted to move here, let's just do it!
-            Some(_) => None, // Deal with collisions later
+            Some(_) => None,                       // Deal with collisions later
         }
     }
 
@@ -193,4 +200,28 @@ fn get_player_by_coord(map: &HashMap<PlayerId, Player>, pos: &Coordinate) -> Opt
     } else {
         None
     }
+}
+
+fn create_players(map: &GameMap, player_ids: Vec<PlayerId>) -> HashMap<PlayerId, Player> {
+    let mut free_tiles = map.get_free_tiles();
+    free_tiles.shuffle(&mut thread_rng());
+
+    player_ids
+        .into_iter()
+        .enumerate()
+        .map(|(index, id)| {
+            (
+                id.clone(),
+                Player::new(
+                    id,
+                    free_tiles
+                        .get(index)
+                        .expect("No more free tiles!")
+                        .coord
+                        .clone(),
+                    false,
+                ),
+            )
+        })
+        .collect()
 }

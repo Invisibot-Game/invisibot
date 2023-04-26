@@ -10,3 +10,4 @@ workspace = ".."
 [dependencies]
 thiserror = "1.0"
 serde = { version = "1", features = ["derive"] }
+rand = "0.8.5"

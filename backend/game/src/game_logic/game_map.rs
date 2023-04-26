@@ -97,4 +97,12 @@ impl GameMap {
 
         self.get_tile_by_coord(&translated_cord)
     }
+
+    pub fn get_free_tiles(&self) -> Vec<Tile> {
+        self.tiles
+            .iter()
+            .filter(|&tile| tile.tile_type == TileType::Empty)
+            .map(|t| t.clone())
+            .collect()
+    }
 }

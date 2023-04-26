@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-
-use crate::{coord, utils::coordinate::Coordinate};
+use crate::utils::coordinate::Coordinate;
 
 pub type PlayerId = u32;
 
@@ -12,6 +10,10 @@ pub struct Player {
 }
 
 impl Player {
+    pub fn new(id: PlayerId, pos: Coordinate, visible: bool) -> Self {
+        Self { id, pos, visible }
+    }
+
     pub fn get_id(&self) -> &PlayerId {
         &self.id
     }
@@ -39,30 +41,4 @@ impl Player {
             visible,
         }
     }
-}
-
-pub fn create_players() -> HashMap<PlayerId, Player> {
-    let mut map = HashMap::new();
-
-    let first_player_id: PlayerId = 0;
-    map.insert(
-        first_player_id,
-        Player {
-            id: first_player_id,
-            pos: coord!(4, 3),
-            visible: false,
-        },
-    );
-
-    let second_player_id: PlayerId = 1;
-    map.insert(
-        second_player_id,
-        Player {
-            id: second_player_id,
-            pos: coord!(1, 2),
-            visible: false,
-        },
-    );
-
-    map
 }
