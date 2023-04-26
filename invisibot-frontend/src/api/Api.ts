@@ -1,12 +1,23 @@
 import axios, { AxiosResponse } from "axios";
 import { Round } from "./Round";
 
-axios.defaults.baseURL = "http://0.0.0.0:8000/api";
+axios.defaults.baseURL = "http://localhost:3000/api";
 
 export const Api = {
   game: {
+    create: (numPlayers: number, numRounds: number) => {
+      return handleResponse(
+        axios.post("/game", {
+          numPlayers: numPlayers,
+          numRounds: numRounds,
+        })
+      );
+    },
     get: () => {
       return handleResponse<{ rounds: Round[] }>(axios.get("/game"));
+    },
+    delete: () => {
+      return handleResponse(axios.delete("/game"));
     },
   },
 };

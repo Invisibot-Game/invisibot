@@ -107,6 +107,10 @@ function getPlayerColor(id?: number): string {
       return styles.player0;
     case 1:
       return styles.player1;
+    case 2:
+      return styles.player2;
+    case 3:
+      return styles.player3;
     case undefined:
       return "";
     default:

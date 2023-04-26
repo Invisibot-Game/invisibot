@@ -4,6 +4,8 @@ import { GetServerSideProps } from "next";
 import { Api } from "@/api/Api";
 import { Round } from "@/api/Round";
 import { ErrorHeader } from "@/components/views/error_header/ErrorHeader";
+import { GameControlDashboard } from "@/components/views/game_control_dashboard/GameControlDashboard";
+import { ErrorCard } from "@/components/elements/error_card/ErrorCard";
 
 type HomeProps = {
   rounds?: Round[];
@@ -11,18 +13,17 @@ type HomeProps = {
 };
 
 export default function Home({ rounds, error }: HomeProps) {
-  if (error) {
-    return <ErrorHeader error={error} />;
-  }
-
-  if (!rounds) {
-    return <ErrorHeader error={"Failed to reach backend"} />;
-  }
-
   return (
     <>
       <main className={styles.main}>
-        <GameBoard rounds={rounds} />
+        {error ? (
+          <ErrorCard error={error} />
+        ) : !rounds ? (
+          <ErrorCard error={"Failed to load rounds"} />
+        ) : (
+          <GameBoard rounds={rounds} />
+        )}
+        <GameControlDashboard />
       </main>
     </>
   );
