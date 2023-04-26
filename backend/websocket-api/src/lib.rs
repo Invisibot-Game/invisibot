@@ -5,7 +5,10 @@ use std::{
     net::{TcpListener, TcpStream},
 };
 
-use invisibot_game::{clients::ClientHandler, player::PlayerId};
+use invisibot_game::{
+    clients::{game_message::GameMessage, ClientHandler},
+    player::PlayerId,
+};
 use tungstenite::{accept, Message, WebSocket};
 
 type WsClient = WebSocket<TcpStream>;
@@ -26,15 +29,32 @@ impl ClientHandler for WsHandler {
             }
         }
 
-        self.greet_clients();
-
         self.clients.iter().map(|(id, _)| id.clone()).collect()
     }
 
-    fn send_text(&mut self, message: String) {
+    fn broadcast_message(&mut self, message: GameMessage) {
+        let serialized = serde_json::to_string(&message).unwrap();
+
+        self.clients.iter_mut().for_each(|(_, client)| {
+            client
+                .write_message(Message::text(&serialized))
+                .expect("Failed to send message")
+        })
+    }
+
+    fn broadcast_text(&mut self, message: String) {
         self.clients
             .iter_mut()
             .for_each(|(_, client)| client.write_message(Message::text(&message)).unwrap());
+    }
+
+    fn send_message(&mut self, player_id: &PlayerId, message: GameMessage) {
+        let serialized = serde_json::to_string(&message).unwrap();
+        self.clients
+            .get_mut(player_id)
+            .unwrap()
+            .write_message(Message::text(&serialized))
+            .expect("Failed to send message")
     }
 
     fn close(&mut self) {
@@ -54,12 +74,5 @@ impl WsHandler {
             server: server,
             clients: HashMap::new(),
         }
-    }
-
-    fn greet_clients(&mut self) {
-        self.clients.iter_mut().for_each(|(id, ws)| {
-            ws.write_message(Message::text(format!("Hello client {}!", id + 1)))
-                .expect("Failed to send greeting to client!");
-        })
     }
 }

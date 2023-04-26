@@ -1,4 +1,4 @@
-use crate::clients::ClientHandler;
+use crate::clients::{game_message::GameMessage, ClientHandler};
 
 use super::{game_config::GameConfig, game_state::GameState};
 
@@ -13,6 +13,8 @@ impl<T: ClientHandler> Game<T> {
     pub fn new(client_handler: T, game_config: GameConfig) -> Self {
         let mut client_handler = client_handler;
         let clients = client_handler.accept_clients(game_config.num_players);
+
+        client_handler.broadcast_message(GameMessage::ClientHello(format!("Welcome to the game!")));
 
         Self {
             curr_state: GameState::new(clients),

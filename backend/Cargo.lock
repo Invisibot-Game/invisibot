@@ -1468,6 +1468,8 @@ name = "websocket_api"
 version = "0.1.0"
 dependencies = [
  "invisibot_game",
+ "serde",
+ "serde_json",
  "tungstenite",
 ]
 

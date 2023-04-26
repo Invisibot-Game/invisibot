@@ -49,11 +49,6 @@ pub fn get_game(current_game: &State<CurrentGameState>) -> GameResponse<RoundsRe
         Some(g) => g,
     };
 
-    running_game
-        .game
-        .client_handler
-        .send_text(format!("Game will now run!"));
-
     let states = match run_game(
         running_game.game.curr_state.clone(),
         &running_game.game.config,
@@ -140,7 +135,7 @@ pub fn delete_game(current_game: &State<CurrentGameState>) -> Result<String, Str
         Some(g) => {
             g.game
                 .client_handler
-                .send_text(format!("Game is now closing, bye bye!"));
+                .broadcast_text(format!("Game is now closing, bye bye!"));
             g.game.client_handler.close();
         }
     }
@@ -154,7 +149,7 @@ fn run_game(initial_state: GameState, config: &GameConfig) -> GameResult<Vec<Gam
 
     let mut states = vec![initial_state.clone()];
     let mut state: GameState = initial_state;
-    for _ in 0..config.num_rounds {
+    for _ in 0..(config.num_rounds - 1) {
         let new_state = state.run_round(&mut player_clients)?;
         states.push(state);
         state = new_state;
