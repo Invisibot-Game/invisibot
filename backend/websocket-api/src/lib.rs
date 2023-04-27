@@ -9,6 +9,7 @@ use invisibot_game::{
     clients::{game_message::GameMessage, ClientHandler},
     player::PlayerId,
 };
+use serde::de::DeserializeOwned;
 use tungstenite::{accept, Message, WebSocket};
 
 type WsClient = WebSocket<TcpStream>;
@@ -55,6 +56,19 @@ impl ClientHandler for WsHandler {
             .unwrap()
             .write_message(Message::text(&serialized))
             .expect("Failed to send message")
+    }
+
+    fn receive_messages<ResponseMessage: DeserializeOwned>(
+        &mut self,
+    ) -> HashMap<PlayerId, ResponseMessage> {
+        self.clients
+            .iter_mut()
+            .map(|(id, client)| (id, client.read_message().unwrap()))
+            .map(|(id, c)| {
+                let json = serde_json::from_str(c.to_text().unwrap()).unwrap();
+                (id.clone(), json)
+            })
+            .collect()
     }
 
     fn close(&mut self) {
