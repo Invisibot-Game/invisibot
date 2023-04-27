@@ -1,8 +1,10 @@
+use serde::Serialize;
+
 use crate::utils::coordinate::Coordinate;
 
 pub type PlayerId = u32;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Player {
     id: PlayerId,
     pos: Coordinate,

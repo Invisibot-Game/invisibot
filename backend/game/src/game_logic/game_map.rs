@@ -30,13 +30,13 @@ impl Display for TileType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Tile {
     pub coord: Coordinate,
     pub tile_type: TileType,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct GameMap {
     pub tiles: Vec<Tile>,
     pub width: u32,

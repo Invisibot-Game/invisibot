@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use rand::{seq::SliceRandom, thread_rng};
+use serde::Serialize;
 
 use crate::{
     player::{Player, PlayerId},
@@ -12,7 +13,7 @@ use super::{
     player::PlayerClients,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct GameState {
     pub map: GameMap,
     pub players: HashMap<PlayerId, Player>,

@@ -1,12 +1,5 @@
 use ::serde::{Deserialize, Serialize};
-use invisibot_game::{
-    clients::ClientHandler,
-    game_logic::{
-        game::Game, game_config::GameConfig, game_map::TileType, game_state::GameState,
-        player::PlayerClients,
-    },
-    utils::game_error::GameResult,
-};
+use invisibot_game::game_logic::{game::Game, game_config::GameConfig, game_map::TileType};
 use rocket::{serde::json::Json, State};
 use websocket_api::WsHandler;
 
@@ -49,15 +42,13 @@ pub fn get_game(current_game: &State<CurrentGameState>) -> GameResponse<RoundsRe
         Some(g) => g,
     };
 
-    let states = match run_game(
-        running_game.game.curr_state.clone(),
-        &running_game.game.config,
-    ) {
-        Ok(s) => s,
-        Err(e) => return GameResponse::err(e.to_string()),
-    };
+    if let Err(e) = running_game.game.run_game() {
+        return GameResponse::err(e.to_string());
+    }
 
-    let rounds = states
+    let rounds = running_game
+        .game
+        .get_game_rounds()
         .into_iter()
         .map(|s| RoundResponse {
             width: s.map.width,
@@ -133,27 +124,10 @@ pub fn delete_game(current_game: &State<CurrentGameState>) -> Result<String, Str
     match &mut curr_game.current_game {
         None => return Err(format!("No game is running!")),
         Some(g) => {
-            g.game
-                .client_handler
-                .broadcast_text(format!("Game is now closing, bye bye!"));
-            g.game.client_handler.close();
+            g.game.end_game();
         }
     }
 
     curr_game.current_game = None;
     Ok(format!("Game deleted successfully"))
-}
-
-fn run_game(initial_state: GameState, config: &GameConfig) -> GameResult<Vec<GameState>> {
-    let mut player_clients = PlayerClients::new();
-
-    let mut states = vec![initial_state.clone()];
-    let mut state: GameState = initial_state;
-    for _ in 0..(config.num_rounds - 1) {
-        let new_state = state.run_round(&mut player_clients)?;
-        states.push(state);
-        state = new_state;
-    }
-
-    Ok(states)
 }
