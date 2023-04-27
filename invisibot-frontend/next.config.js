@@ -7,7 +7,7 @@ const nextConfig = {
       return [
         {
           source: "/api/:ep*",
-          destination: `http://host.docker.internal:8000/api/:ep*`,
+          destination: `${process.env.NEXT_PUBLIC_BASE_URL}/:ep*`,
         },
       ];
     } else {
