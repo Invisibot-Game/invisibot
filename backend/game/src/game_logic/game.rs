@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    clients::{game_message::GameMessage, ClientHandler},
+    clients::{game_message::GameMessage, round_response::RoundResponse, ClientHandler},
     player::PlayerId,
     utils::game_error::GameResult,
 };
@@ -41,7 +41,7 @@ impl<T: ClientHandler> Game<T> {
                     .send_message(id, GameMessage::game_round(state.clone(), id.clone()));
             });
 
-            let moves: HashMap<PlayerId, String> = self.client_handler.receive_messages();
+            let moves: HashMap<PlayerId, RoundResponse> = self.client_handler.receive_messages();
             moves
                 .into_iter()
                 .for_each(|(id, resp)| println!("Player {id} repsonded with {resp:?}"));
