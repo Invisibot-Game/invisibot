@@ -25,6 +25,15 @@ impl GameMessage {
     pub fn goodbye(message: String) -> GameMessage {
         GameMessage::ClientGoodbye(message)
     }
+
+    /// Returns the message type in a human readable format.
+    pub fn message_type(&self) -> String {
+        String::from(match self {
+            GameMessage::ClientHello(_) => "Client Hello",
+            GameMessage::GameRound(_) => "Game Round",
+            GameMessage::ClientGoodbye(_) => "Client Goodbye",
+        })
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
