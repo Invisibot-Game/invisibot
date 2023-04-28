@@ -4,3 +4,9 @@ use serde::{Deserialize, Serialize};
 pub struct RoundResponse {
     round_move: String,
 }
+
+impl RoundResponse {
+    pub fn new(round: String) -> Self {
+        Self { round_move: round }
+    }
+}
