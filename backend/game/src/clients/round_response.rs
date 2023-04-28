@@ -11,4 +11,8 @@ impl RoundResponse {
     pub fn new(dir: Direction) -> Self {
         Self { dir }
     }
+
+    pub fn get_dir(&self) -> Direction {
+        return self.dir.clone();
+    }
 }

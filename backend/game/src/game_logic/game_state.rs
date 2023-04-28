@@ -5,13 +5,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     player::{Player, PlayerId},
-    utils::{coordinate::Coordinate, game_error::GameResult},
+    utils::{coordinate::Coordinate, direction::Direction, game_error::GameResult},
 };
 
-use super::{
-    game_map::{GameMap, TileType},
-    player::PlayerClients,
-};
+use super::game_map::{GameMap, TileType};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameState {
@@ -27,8 +24,19 @@ impl GameState {
         Self { map, players }
     }
 
-    pub fn run_round(&self, player_clients: &mut PlayerClients) -> GameResult<Self> {
-        let requested_destinations = self.get_requested_destinations(player_clients)?;
+    pub fn run_round(&self, moves: HashMap<PlayerId, Direction>) -> GameResult<Self> {
+        let requested_destinations = moves
+            .into_iter()
+            .map(|(id, dir)| {
+                let player = self.players.get(&id).expect("Player did not exist?");
+                let new_tile = self
+                    .map
+                    .get_tile_translated(player.get_pos(), &dir)
+                    .expect("Failed to translate tile");
+                (id, new_tile.coord)
+            })
+            .collect();
+        // let requested_destinations = self.get_requested_destinations(player_clients)?;
 
         let tile_collisions = self.check_collisions(&requested_destinations);
 
@@ -38,25 +46,6 @@ impl GameState {
             map: self.map.clone(),
             players: next_round_players,
         })
-    }
-
-    fn get_requested_destinations(
-        &self,
-        player_clients: &mut PlayerClients,
-    ) -> GameResult<HashMap<PlayerId, Coordinate>> {
-        self.players
-            .iter()
-            .map(|(id, p)| (id, p.get_pos()))
-            .map(|(id, coord)| {
-                let dir = player_clients.play_round(&self, id);
-                let requested_coord = self
-                    .map
-                    .get_tile_translated(coord, &dir)
-                    .map(|tile| tile.coord)
-                    .unwrap_or(coord.clone());
-                Ok((id.clone(), requested_coord))
-            })
-            .collect()
     }
 
     fn check_collisions(
