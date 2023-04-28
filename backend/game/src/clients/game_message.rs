@@ -1,8 +1,8 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{game_logic::game_state::GameState, player::PlayerId};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum GameMessage {
     ClientHello(String),
@@ -27,7 +27,7 @@ impl GameMessage {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameRound {
     game_state: GameState,
     player_id: PlayerId,
