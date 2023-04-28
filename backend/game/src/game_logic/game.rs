@@ -51,6 +51,7 @@ impl<T: ClientHandler> Game<T> {
             state = new_state;
         }
 
+        self.client_handler.close();
         self.game_rounds = states;
 
         Ok(())

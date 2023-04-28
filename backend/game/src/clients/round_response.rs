@@ -1,12 +1,14 @@
 use serde::{Deserialize, Serialize};
 
+use crate::utils::direction::Direction;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RoundResponse {
-    round_move: String,
+    dir: Direction,
 }
 
 impl RoundResponse {
-    pub fn new(round: String) -> Self {
-        Self { round_move: round }
+    pub fn new(dir: Direction) -> Self {
+        Self { dir }
     }
 }
