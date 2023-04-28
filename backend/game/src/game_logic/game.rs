@@ -6,7 +6,7 @@ use crate::{
     utils::game_error::GameResult,
 };
 
-use super::{game_config::GameConfig, game_state::GameState, player::PlayerClients};
+use super::{game_config::GameConfig, game_state::GameState};
 
 pub struct Game<Handler: ClientHandler> {
     config: GameConfig,
@@ -31,8 +31,6 @@ impl<T: ClientHandler> Game<T> {
     }
 
     pub fn run_game(&mut self) -> GameResult<()> {
-        let mut player_clients = PlayerClients::new();
-
         let mut states = vec![self.initial_state.clone()];
         let mut state: GameState = self.initial_state.clone();
         for _ in 0..(self.config.num_rounds - 1) {
@@ -43,14 +41,20 @@ impl<T: ClientHandler> Game<T> {
 
             let moves: HashMap<PlayerId, RoundResponse> = self.client_handler.receive_messages();
             moves
+                .iter()
+                .for_each(|(id, resp)| println!("Player {id} responded with {resp:?}"));
+            let moves = moves
                 .into_iter()
-                .for_each(|(id, resp)| println!("Player {id} repsonded with {resp:?}"));
+                .map(|(id, resp)| (id, resp.get_dir()))
+                .collect();
 
-            let new_state = state.run_round(&mut player_clients)?;
+            let new_state = state.run_round(moves)?;
             states.push(state);
             state = new_state;
         }
 
+        self.client_handler
+            .broadcast_message(GameMessage::goodbye("Bye".to_string()));
         self.client_handler.close();
         self.game_rounds = states;
 
