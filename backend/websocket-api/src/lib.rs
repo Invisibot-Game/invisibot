@@ -65,7 +65,9 @@ impl ClientHandler for WsHandler {
             .iter_mut()
             .map(|(id, client)| (id, client.read_message().unwrap()))
             .map(|(id, c)| {
-                let json = serde_json::from_str(c.to_text().unwrap()).unwrap();
+                let text_response = c.to_text().expect("Failed to read text from response");
+                let json = serde_json::from_str(text_response)
+                    .expect("Failed to parse json from response");
                 (id.clone(), json)
             })
             .collect()

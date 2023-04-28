@@ -7,6 +7,7 @@ use crate::player::PlayerId;
 use self::game_message::GameMessage;
 
 pub mod game_message;
+pub mod round_response;
 
 pub trait ClientHandler {
     fn accept_clients(&mut self, num_clients: usize) -> Vec<PlayerId>;
