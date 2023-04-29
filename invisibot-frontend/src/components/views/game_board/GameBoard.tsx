@@ -29,10 +29,10 @@ export const GameBoard = ({ rounds }: GameBoardProps) => {
   return (
     <div className={styles.container}>
       <div className={styles.board}>
-        {[...Array(state.width)].map((_, x) => (
-          <div key={`row-${x}`} className={styles.gridRow}>
-            {[...Array(state.height)].map((_, y) => {
-              const index = x * state.height + y;
+        {[...Array(state.width)].map((_, y) => (
+          <div key={`row-${y}`} className={styles.gridRow}>
+            {[...Array(state.height)].map((_, x) => {
+              const index = y * state.width + x;
               const tile = state.tiles.at(index)!!;
               const tileStyle =
                 tile === TileType.Wall ? styles.wall : styles.empty;
