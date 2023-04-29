@@ -51,8 +51,8 @@ impl GameMap {
         let width = image.get_width();
         let height = image.get_height();
 
-        let tiles = (0..height)
-            .flat_map(|y| (0..width).map(move |x| (x, y)))
+        let tiles = image
+            .coordinates()
             .map(|(x, y)| {
                 let pixel = image.get_pixel(x, y);
                 Tile {
