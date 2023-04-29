@@ -5,7 +5,7 @@ services:
       context: backend
       dockerfile: dev.Dockerfile
     ports:
-      - ${BACKEND_PORT}:8080
+      - ${BACKEND_PORT}:8000
       - ${WEBSOCKET_PORT}:4900
     volumes:
       - ./backend:/app
