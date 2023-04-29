@@ -1,6 +1,5 @@
 use std::{fmt::Display, path::Path};
 
-use bmp::Pixel;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -40,6 +39,7 @@ pub struct Tile {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameMap {
     pub tiles: Vec<Tile>,
+    starting_positions: Vec<Coordinate>,
     pub width: u32,
     pub height: u32,
 }
@@ -51,26 +51,34 @@ impl GameMap {
         let width = image.get_width();
         let height = image.get_height();
 
+        let mut starting_positions: Vec<Coordinate> = vec![];
+
         let tiles = image
             .coordinates()
             .map(|(x, y)| {
                 let pixel = image.get_pixel(x, y);
+                let color = (pixel.r, pixel.g, pixel.b);
+                if color == (0, 255, 0) {
+                    starting_positions.push(coord!(x, y));
+                }
+
                 Tile {
                     coord: coord!(x, y),
-                    tile_type: Self::tiletype_for_pixel(pixel),
+                    tile_type: Self::tiletype_for_color(color),
                 }
             })
             .collect();
 
         Self {
             tiles,
+            starting_positions,
             width,
             height,
         }
     }
 
-    fn tiletype_for_pixel(pixel: Pixel) -> TileType {
-        match (pixel.r, pixel.g, pixel.b) {
+    fn tiletype_for_color(color: (u8, u8, u8)) -> TileType {
+        match color {
             (0, 0, 0) => TileType::Wall,
             _ => TileType::Empty,
         }
@@ -108,11 +116,7 @@ impl GameMap {
         self.get_tile_by_coord(&translated_cord)
     }
 
-    pub fn get_free_tiles(&self) -> Vec<Tile> {
-        self.tiles
-            .iter()
-            .filter(|&tile| tile.tile_type == TileType::Empty)
-            .map(|t| t.clone())
-            .collect()
+    pub fn get_starting_positions(&self) -> Vec<Coordinate> {
+        self.starting_positions.clone()
     }
 }

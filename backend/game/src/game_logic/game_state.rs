@@ -195,8 +195,17 @@ fn get_player_by_coord(map: &HashMap<PlayerId, Player>, pos: &Coordinate) -> Opt
 }
 
 fn create_players(map: &GameMap, player_ids: Vec<PlayerId>) -> HashMap<PlayerId, Player> {
-    let mut free_tiles = map.get_free_tiles();
-    free_tiles.shuffle(&mut thread_rng());
+    let mut starting_positions = map.get_starting_positions();
+
+    if starting_positions.len() < player_ids.len() {
+        panic!(
+            "This map only supports {} players but {} players have connected!",
+            starting_positions.len(),
+            player_ids.len()
+        );
+    }
+
+    starting_positions.shuffle(&mut thread_rng());
 
     player_ids
         .into_iter()
@@ -206,10 +215,9 @@ fn create_players(map: &GameMap, player_ids: Vec<PlayerId>) -> HashMap<PlayerId,
                 id.clone(),
                 Player::new(
                     id,
-                    free_tiles
+                    starting_positions
                         .get(index)
-                        .expect("No more free tiles!")
-                        .coord
+                        .expect("Not enough starting positions?")
                         .clone(),
                     false,
                 ),
