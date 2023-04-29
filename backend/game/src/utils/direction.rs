@@ -8,14 +8,13 @@ pub enum Direction {
     Left,
 }
 
-#[macro_export]
-macro_rules! all_dirs {
-    () => {{
+impl Direction {
+    pub fn all_dirs() -> Vec<Direction> {
         vec![
             Direction::Up,
             Direction::Right,
             Direction::Down,
             Direction::Left,
         ]
-    }};
+    }
 }
