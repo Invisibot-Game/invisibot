@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Serialize};
@@ -18,7 +18,8 @@ pub struct GameState {
 
 impl GameState {
     pub fn new(player_ids: Vec<PlayerId>) -> Self {
-        let map = GameMap::new(24, 24);
+        let map = Path::new("./resources/maps/game_map_2.bmp");
+        let map = GameMap::new(map);
         let players = create_players(&map, player_ids);
 
         Self { map, players }

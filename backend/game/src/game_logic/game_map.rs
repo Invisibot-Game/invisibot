@@ -1,5 +1,6 @@
-use std::fmt::Display;
+use std::{fmt::Display, path::Path};
 
+use bmp::Pixel;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -44,25 +45,34 @@ pub struct GameMap {
 }
 
 impl GameMap {
-    pub fn new(width: u32, height: u32) -> Self {
+    pub fn new(map_path: &Path) -> Self {
+        let image = bmp::open(map_path).expect("Failed to read map file");
+
+        let width = image.get_width();
+        let height = image.get_height();
+
         let tiles = (0..height)
-            .map(|y| {
-                (0..width).map(move |x| Tile {
+            .flat_map(|y| (0..width).map(move |x| (x, y)))
+            .map(|(x, y)| {
+                let pixel = image.get_pixel(x, y);
+                Tile {
                     coord: coord!(x, y),
-                    tile_type: if x == 0 || y == 0 || x == (width - 1) || y == (height - 1) {
-                        TileType::Wall
-                    } else {
-                        TileType::Empty
-                    },
-                })
+                    tile_type: Self::tiletype_for_pixel(pixel),
+                }
             })
-            .flatten()
             .collect();
 
         Self {
             tiles,
             width,
             height,
+        }
+    }
+
+    fn tiletype_for_pixel(pixel: Pixel) -> TileType {
+        match (pixel.r, pixel.g, pixel.b) {
+            (0, 0, 0) => TileType::Wall,
+            _ => TileType::Empty,
         }
     }
 
