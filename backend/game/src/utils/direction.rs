@@ -7,3 +7,15 @@ pub enum Direction {
     Right,
     Left,
 }
+
+#[macro_export]
+macro_rules! all_dirs {
+    () => {{
+        vec![
+            Direction::Up,
+            Direction::Right,
+            Direction::Down,
+            Direction::Left,
+        ]
+    }};
+}
