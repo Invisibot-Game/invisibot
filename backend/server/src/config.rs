@@ -22,6 +22,7 @@ type ConfigResult<T> = Result<T, ConfigError>;
 #[derive(Debug, Clone)]
 pub struct Config {
     pub websocket_port: u32,
+    pub map_dir: String,
 }
 
 impl Config {
@@ -30,6 +31,7 @@ impl Config {
 
         Ok(Config {
             websocket_port: load_env_num("WEBSOCKET_PORT")?,
+            map_dir: load_env_str("MAP_DIR")?,
         })
     }
 }

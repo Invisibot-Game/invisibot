@@ -106,6 +106,7 @@ pub fn new_game(
         GameConfig {
             num_players: request.num_players,
             num_rounds: request.num_rounds,
+            map_dir: config.map_dir.clone(),
         },
     );
 

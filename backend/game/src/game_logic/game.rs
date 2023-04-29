@@ -23,7 +23,7 @@ impl<T: ClientHandler> Game<T> {
         client_handler.broadcast_message(GameMessage::hello(format!("Welcome to the game!")));
 
         Self {
-            initial_state: GameState::new(clients),
+            initial_state: GameState::new(clients, &game_config.map_dir),
             game_rounds: vec![],
             client_handler,
             config: game_config,

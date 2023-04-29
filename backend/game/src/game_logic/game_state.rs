@@ -17,8 +17,8 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn new(player_ids: Vec<PlayerId>) -> Self {
-        let map = Path::new("./resources/maps/game_map_2.bmp");
+    pub fn new(player_ids: Vec<PlayerId>, map_dir: &str) -> Self {
+        let map = Path::new(map_dir);
         let map = GameMap::new(map);
         let players = create_players(&map, player_ids);
 
