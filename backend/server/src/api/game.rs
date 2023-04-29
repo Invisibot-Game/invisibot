@@ -123,9 +123,7 @@ pub fn delete_game(current_game: &State<CurrentGameState>) -> Result<String, Str
 
     match &mut curr_game.current_game {
         None => return Err(format!("No game is running!")),
-        Some(g) => {
-            g.game.end_game();
-        }
+        Some(_) => {}
     }
 
     curr_game.current_game = None;

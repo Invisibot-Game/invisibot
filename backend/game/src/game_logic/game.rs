@@ -64,10 +64,4 @@ impl<T: ClientHandler> Game<T> {
     pub fn get_game_rounds(&self) -> Vec<GameState> {
         self.game_rounds.clone()
     }
-
-    pub fn end_game(&mut self) {
-        self.client_handler
-            .broadcast_text(format!("Game is now closing, bye bye!"));
-        self.client_handler.close();
-    }
 }
