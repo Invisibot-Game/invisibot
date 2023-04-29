@@ -17,24 +17,24 @@ pub enum GameMessage {
 }
 
 impl GameMessage {
-    pub fn hello(message: String) -> GameMessage {
-        GameMessage::ClientHello(message)
+    pub fn hello(message: String) -> Self {
+        Self::ClientHello(message)
     }
 
-    pub fn game_round(game_state: GameState, player_id: PlayerId) -> GameMessage {
+    pub fn game_round(game_state: GameState, player_id: PlayerId) -> Self {
         Self::GameRound(GameRound::new(&game_state, &player_id))
     }
 
-    pub fn goodbye(message: String) -> GameMessage {
-        GameMessage::ClientGoodbye(message)
+    pub fn goodbye(message: String) -> Self {
+        Self::ClientGoodbye(message)
     }
 
     /// Returns the message type in a human readable format.
     pub fn message_type(&self) -> String {
         String::from(match self {
-            GameMessage::ClientHello(_) => "Client Hello",
-            GameMessage::GameRound(_) => "Game Round",
-            GameMessage::ClientGoodbye(_) => "Client Goodbye",
+            Self::ClientHello(_) => "Client Hello",
+            Self::GameRound(_) => "Game Round",
+            Self::ClientGoodbye(_) => "Client Goodbye",
         })
     }
 }
@@ -50,22 +50,26 @@ pub struct GameRound {
 
 impl GameRound {
     pub fn new(game_state: &GameState, current_player: &PlayerId) -> Self {
+        let walls = game_state
+            .map
+            .tiles
+            .iter()
+            .filter(|t| t.tile_type == TileType::Wall)
+            .map(|t| t.coord.clone())
+            .collect();
+
+        let visible_players = game_state
+            .players
+            .iter()
+            .filter(|&(id, p)| id == current_player || p.is_visible())
+            .map(|(id, p)| (id.clone(), p.get_pos().clone()))
+            .collect();
+
         Self {
             width: game_state.map.width,
             height: game_state.map.height,
-            walls: game_state
-                .map
-                .tiles
-                .iter()
-                .filter(|t| t.tile_type == TileType::Wall)
-                .map(|t| t.coord.clone())
-                .collect(),
-            visible_players: game_state
-                .players
-                .iter()
-                .filter(|&(id, p)| id == current_player || p.is_visible())
-                .map(|(id, p)| (id.clone(), p.get_pos().clone()))
-                .collect(),
+            walls,
+            visible_players,
             own_player_id: current_player.clone(),
         }
     }
