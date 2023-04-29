@@ -37,7 +37,6 @@ impl GameState {
                 (id, new_tile.coord)
             })
             .collect();
-        // let requested_destinations = self.get_requested_destinations(player_clients)?;
 
         let tile_collisions = self.check_collisions(&requested_destinations);
 
