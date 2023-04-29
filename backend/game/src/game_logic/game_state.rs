@@ -137,6 +137,7 @@ impl GameState {
 
         if !self.is_pos_walkable(req) || self.pos_contains_player(req) {
             // Either a wall or a player is blocking us from going there.
+            println!("Player {player_id} wanted to go into a player or wall at {req:?}");
             return Some((curr.clone(), true));
         }
 
@@ -157,6 +158,7 @@ impl GameState {
         let tile = if let Ok(tile) = self.map.get_tile_by_coord(pos) {
             tile
         } else {
+            println!("\tTILE IS OUT OF BOUNDS!");
             return false;
         };
 
