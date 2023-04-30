@@ -1,6 +1,5 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
-#![deny(rust_2018_idioms)]
 
 //! # Invisibot game lib
 //!
