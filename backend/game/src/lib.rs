@@ -1,4 +1,11 @@
 #![forbid(unsafe_code)]
+#![deny(missing_docs)]
+#![deny(rust_2018_idioms)]
+
+//! # Invisibot game lib
+//!
+//! Contains the game logic for the invisibot, bot arena game where bots that are invisible fight other bots that are also invisible.
+//!
 
 use clients::ClientHandler;
 use game_logic::{game::Game, game_config::GameConfig};
