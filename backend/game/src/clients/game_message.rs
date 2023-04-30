@@ -7,23 +7,31 @@ use crate::{
 };
 
 use super::player_id::PlayerId;
+
+/// Messages sent from the server to the clients
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum GameMessage {
+    /// A welcome message sent to the clients as they connect.
     ClientHello(String),
+    /// A message sent on each game round requesting moves from the clients.
     GameRound(GameRound),
+    /// A message sent as the game is over before the server closes the connection.
     ClientGoodbye(String),
 }
 
 impl GameMessage {
+    /// Creates an instance of the ClientHello message.
     pub fn hello(message: String) -> Self {
         Self::ClientHello(message)
     }
 
+    /// Creates an instance of the GameRound message.
     pub fn game_round(game_state: GameState, player_id: PlayerId) -> Self {
         Self::GameRound(GameRound::new(&game_state, &player_id))
     }
 
+    /// Creates an instance of the ClientGoodbye message.
     pub fn goodbye(message: String) -> Self {
         Self::ClientGoodbye(message)
     }
@@ -38,12 +46,18 @@ impl GameMessage {
     }
 }
 
+/// Information provided to each client on every round from which they can base their decision on.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameRound {
+    /// The map width.
     pub width: u32,
+    /// The map height.
     pub height: u32,
+    /// A list of all coordinate that contain walls.
     pub walls: Vec<Coordinate>,
+    /// A map of all players that became visible after the last move and their (then) coordinates.
     pub visible_players: HashMap<PlayerId, Coordinate>,
+    /// The player id of the player this message is sent to.
     pub own_player_id: PlayerId,
 }
 

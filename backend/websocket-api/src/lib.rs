@@ -1,12 +1,15 @@
 #![forbid(unsafe_code)]
 
+#[doc(hidden)]
 use std::{
     collections::{HashMap, HashSet},
     net::{TcpListener, TcpStream},
 };
 
 use invisibot_game::clients::{game_message::GameMessage, player_id::PlayerId, ClientHandler};
+#[doc(hidden)]
 use serde::de::DeserializeOwned;
+#[doc(hidden)]
 use tungstenite::{accept, Message, WebSocket};
 
 type WsClient = WebSocket<TcpStream>;
