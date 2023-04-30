@@ -15,6 +15,8 @@ pub enum ConfigError {
     VarEmpty(String),
     #[error("Invalid integer `{0}`")]
     InvalidInteger(String),
+    #[error("Invalid boolean `{0}`")]
+    InvalidBoolean(String),
 }
 
 type ConfigResult<T> = Result<T, ConfigError>;
@@ -23,6 +25,7 @@ type ConfigResult<T> = Result<T, ConfigError>;
 pub struct Config {
     pub websocket_port: u32,
     pub map_dir: String,
+    pub development_mode: bool,
 }
 
 impl Config {
@@ -32,6 +35,7 @@ impl Config {
         Ok(Config {
             websocket_port: load_env_num("WEBSOCKET_PORT")?,
             map_dir: load_env_str("MAP_DIR")?,
+            development_mode: load_env_bool("DEVELOPMENT_MODE")?,
         })
     }
 }
@@ -49,4 +53,9 @@ fn load_env_str(key: &str) -> ConfigResult<String> {
 fn load_env_num(key: &str) -> ConfigResult<u32> {
     let var = load_env_str(key)?;
     var.parse().map_err(|_| ConfigError::InvalidInteger(var))
+}
+
+fn load_env_bool(key: &str) -> ConfigResult<bool> {
+    let var = load_env_str(key)?;
+    var.parse().map_err(|_| ConfigError::InvalidBoolean(var))
 }
