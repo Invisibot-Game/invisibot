@@ -8,13 +8,15 @@
 //!
 
 use clients::ClientHandler;
-use game_logic::{game::Game, game_config::GameConfig};
+use game::Game;
+use game_config::GameConfig;
 
 pub mod clients;
-pub mod game_logic;
-pub mod player;
+pub mod game;
+pub mod game_config;
 pub mod utils;
 
+mod game_logic;
 pub fn initiate_game<T: ClientHandler>(client_handler: T, config: GameConfig) -> Game<T> {
     Game::new(client_handler, config)
 }

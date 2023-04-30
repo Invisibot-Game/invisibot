@@ -1,84 +1,44 @@
-use crate::{player::PlayerId, utils::direction::Direction};
+use serde::{Deserialize, Serialize};
 
-use super::game_state::GameState;
+use crate::{clients::player_id::PlayerId, utils::coordinate::Coordinate};
 
-pub struct PlayerClients {
-    player_one: PlayerOne,
-    player_two: PlayerTwo,
-    player_three: PlayerOne,
-    player_four: PlayerTwo,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Player {
+    id: PlayerId,
+    pos: Coordinate,
+    visible: bool,
 }
 
-impl PlayerClients {
-    pub fn new() -> Self {
+impl Player {
+    pub fn new(id: PlayerId, pos: Coordinate, visible: bool) -> Self {
+        Self { id, pos, visible }
+    }
+
+    pub fn get_id(&self) -> &PlayerId {
+        &self.id
+    }
+
+    pub fn get_pos(&self) -> &Coordinate {
+        &self.pos
+    }
+
+    pub fn is_visible(&self) -> bool {
+        self.visible
+    }
+
+    pub fn update_pos(player: &Player, new_pos: Coordinate, visible: bool) -> Self {
         Self {
-            player_one: PlayerOne,
-            player_two: PlayerTwo,
-            player_three: PlayerOne,
-            player_four: PlayerTwo,
+            id: player.id.clone(),
+            pos: new_pos,
+            visible,
         }
     }
 
-    pub fn play_round(&mut self, game_state: &GameState, player_id: &PlayerId) -> Direction {
-        match player_id {
-            0 => self.player_one.play_round(game_state, player_id),
-            1 => self.player_two.play_round(game_state, player_id),
-            2 => self.player_three.play_round(game_state, player_id),
-            3 => self.player_four.play_round(game_state, player_id),
-            _ => {
-                println!("Error: PlayerId out of scope");
-                Direction::Down
-            }
-        }
-    }
-}
-
-pub trait PlayerClient {
-    fn play_round(&mut self, game_state: &GameState, player_id: &PlayerId) -> Direction;
-}
-
-pub struct PlayerOne;
-
-impl PlayerClient for PlayerOne {
-    fn play_round(&mut self, game_state: &GameState, player_id: &PlayerId) -> Direction {
-        let player = game_state.players[player_id].clone();
-        let x = player.get_pos().x;
-        let y = player.get_pos().y;
-
-        let bottom_edge = game_state.map.height - 2;
-        let right_edge = game_state.map.width - 2;
-
-        match (x, y) {
-            (1, 1) => Direction::Down,
-            (1, _) if y == bottom_edge => Direction::Right,
-            (1, _) => Direction::Down,
-            (_, 1) => Direction::Left,
-            (_, _) if x == right_edge => Direction::Up,
-            (_, _) if y == bottom_edge => Direction::Right,
-            (_, _) => Direction::Up,
-        }
-    }
-}
-
-pub struct PlayerTwo;
-
-impl PlayerClient for PlayerTwo {
-    fn play_round(&mut self, game_state: &GameState, player_id: &PlayerId) -> Direction {
-        let player = game_state.players[player_id].clone();
-        let x = player.get_pos().x;
-        let y = player.get_pos().y;
-
-        let bottom_edge = game_state.map.height - 2;
-        let right_edge = game_state.map.width - 2;
-
-        match (x, y) {
-            (1, 1) => Direction::Right,
-            (1, _) if y == bottom_edge => Direction::Up,
-            (1, _) => Direction::Up,
-            (_, 1) => Direction::Right,
-            (_, _) if x == right_edge => Direction::Down,
-            (_, _) if y == bottom_edge => Direction::Left,
-            (_, _) => Direction::Down,
+    pub fn update_visibility(player: &Player, visible: bool) -> Self {
+        Self {
+            id: player.id.clone(),
+            pos: player.pos.clone(),
+            visible,
         }
     }
 }

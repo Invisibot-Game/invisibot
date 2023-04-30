@@ -1,14 +1,19 @@
-use std::{collections::HashMap, path::Path};
+use std::{
+    collections::{HashMap, HashSet},
+    path::Path,
+};
 
 use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    player::{Player, PlayerId},
-    utils::{coordinate::Coordinate, direction::Direction, game_error::GameResult},
+    clients::player_id::PlayerId,
+    utils::{
+        coordinate::Coordinate, direction::Direction, game_error::GameResult, tile_type::TileType,
+    },
 };
 
-use super::game_map::{GameMap, TileType};
+use super::{game_map::GameMap, player::Player};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameState {
@@ -17,7 +22,7 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn new(player_ids: Vec<PlayerId>, map_dir: &str) -> Self {
+    pub fn new(player_ids: HashSet<PlayerId>, map_dir: &str) -> Self {
         let map = Path::new(map_dir);
         let map = GameMap::new(map);
         let players = create_players(&map, player_ids);
@@ -194,7 +199,7 @@ fn get_player_by_coord(map: &HashMap<PlayerId, Player>, pos: &Coordinate) -> Opt
     }
 }
 
-fn create_players(map: &GameMap, player_ids: Vec<PlayerId>) -> HashMap<PlayerId, Player> {
+fn create_players(map: &GameMap, player_ids: HashSet<PlayerId>) -> HashMap<PlayerId, Player> {
     let mut starting_positions = map.get_starting_positions();
 
     if starting_positions.len() < player_ids.len() {

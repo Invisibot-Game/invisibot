@@ -1,13 +1,12 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use serde::{Deserialize, Serialize};
-
 use crate::{
-    game_logic::{game_map::TileType, game_state::GameState},
-    player::PlayerId,
-    utils::coordinate::Coordinate,
+    game_logic::game_state::GameState,
+    utils::{coordinate::Coordinate, tile_type::TileType},
 };
 
+use super::player_id::PlayerId;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum GameMessage {
@@ -49,7 +48,7 @@ pub struct GameRound {
 }
 
 impl GameRound {
-    pub fn new(game_state: &GameState, current_player: &PlayerId) -> Self {
+    fn new(game_state: &GameState, current_player: &PlayerId) -> Self {
         let walls = game_state
             .map
             .tiles

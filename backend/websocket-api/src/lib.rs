@@ -1,14 +1,11 @@
 #![forbid(unsafe_code)]
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     net::{TcpListener, TcpStream},
 };
 
-use invisibot_game::{
-    clients::{game_message::GameMessage, ClientHandler},
-    player::PlayerId,
-};
+use invisibot_game::clients::{game_message::GameMessage, player_id::PlayerId, ClientHandler};
 use serde::de::DeserializeOwned;
 use tungstenite::{accept, Message, WebSocket};
 
@@ -21,7 +18,7 @@ pub struct WsHandler {
 }
 
 impl ClientHandler for WsHandler {
-    fn accept_clients(&mut self, num_clients: usize) -> Vec<PlayerId> {
+    fn accept_clients(&mut self, num_clients: usize) -> HashSet<PlayerId> {
         for stream in self.server.incoming() {
             let websocket = accept(stream.unwrap()).unwrap();
             self.clients.insert(self.clients.len() as u32, websocket);

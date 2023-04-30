@@ -1,4 +1,4 @@
-use std::{fmt::Display, path::Path};
+use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
@@ -8,27 +8,9 @@ use crate::{
         coordinate::Coordinate,
         direction::Direction,
         game_error::{GameError, GameResult},
+        tile_type::TileType,
     },
 };
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum TileType {
-    Wall,
-    Empty,
-}
-
-impl Display for TileType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                TileType::Wall => "#",
-                TileType::Empty => ".",
-            }
-        )
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Tile {

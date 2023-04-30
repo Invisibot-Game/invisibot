@@ -1,13 +1,16 @@
 use std::collections::HashMap;
 
 use crate::{
-    clients::{game_message::GameMessage, round_response::RoundResponse, ClientHandler},
-    player::PlayerId,
+    clients::{
+        game_message::GameMessage, player_id::PlayerId, round_response::RoundResponse,
+        ClientHandler,
+    },
+    game_config::GameConfig,
+    game_logic::game_state::GameState,
     utils::game_error::GameResult,
 };
 
-use super::{game_config::GameConfig, game_state::GameState};
-
+/// A particular game.
 pub struct Game<Handler: ClientHandler> {
     config: GameConfig,
     initial_state: GameState,
@@ -16,6 +19,7 @@ pub struct Game<Handler: ClientHandler> {
 }
 
 impl<T: ClientHandler> Game<T> {
+    /// Create a new game with the `client_handler` for communicating with clients and the settings specified in `game_config`.
     pub fn new(client_handler: T, game_config: GameConfig) -> Self {
         let mut client_handler = client_handler;
         let clients = client_handler.accept_clients(game_config.num_players);
@@ -30,6 +34,7 @@ impl<T: ClientHandler> Game<T> {
         }
     }
 
+    /// Simulate the entire game, mutating itself and storing all the states, use `get_game_rounds` to retrieve the states generated.
     pub fn run_game(&mut self) -> GameResult<()> {
         let mut states = vec![self.initial_state.clone()];
         let mut state: GameState = self.initial_state.clone();
@@ -61,6 +66,7 @@ impl<T: ClientHandler> Game<T> {
         Ok(())
     }
 
+    /// Get the states that occurred during the game, will be empty if `run_game` is not called first.
     pub fn get_game_rounds(&self) -> Vec<GameState> {
         self.game_rounds.clone()
     }

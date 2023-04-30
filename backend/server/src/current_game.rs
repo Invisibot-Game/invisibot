@@ -1,6 +1,6 @@
 use std::sync::Mutex;
 
-use invisibot_game::game_logic::game::Game;
+use invisibot_game::game::Game;
 use websocket_api::WsHandler;
 
 #[derive(Default)]

@@ -1,5 +1,5 @@
 use ::serde::{Deserialize, Serialize};
-use invisibot_game::game_logic::{game::Game, game_config::GameConfig, game_map::TileType};
+use invisibot_game::{game::Game, game_config::GameConfig, utils::tile_type::TileType};
 use rocket::{serde::json::Json, State};
 use websocket_api::WsHandler;
 
