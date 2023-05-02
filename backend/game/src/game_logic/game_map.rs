@@ -27,8 +27,11 @@ pub struct GameMap {
 }
 
 impl GameMap {
-    pub fn new(map_path: &Path) -> Self {
-        let image = bmp::open(map_path).expect("Failed to read map file");
+    pub fn new(map_path: &Path) -> GameResult<Self> {
+        let image = bmp::open(map_path).map_err(|e| {
+            println!("Failed to read map file {e:?}");
+            GameError::MapLoadError
+        })?;
 
         let width = image.get_width();
         let height = image.get_height();
@@ -51,12 +54,12 @@ impl GameMap {
             })
             .collect();
 
-        Self {
+        Ok(Self {
             tiles,
             starting_positions,
             width,
             height,
-        }
+        })
     }
 
     fn tiletype_for_color(color: (u8, u8, u8)) -> TileType {

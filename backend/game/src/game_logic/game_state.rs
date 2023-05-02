@@ -9,7 +9,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     clients::player_id::PlayerId,
     utils::{
-        coordinate::Coordinate, direction::Direction, game_error::GameResult, tile_type::TileType,
+        coordinate::Coordinate,
+        direction::Direction,
+        game_error::{GameError, GameResult},
+        tile_type::TileType,
     },
 };
 
@@ -22,26 +25,28 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn new(player_ids: HashSet<PlayerId>, map_dir: &str) -> Self {
+    pub fn new(player_ids: HashSet<PlayerId>, map_dir: &str) -> GameResult<Self> {
         let map = Path::new(map_dir);
-        let map = GameMap::new(map);
-        let players = create_players(&map, player_ids);
+        let map = GameMap::new(map)?;
+        let players = create_players(&map, player_ids)?;
 
-        Self { map, players }
+        Ok(Self { map, players })
     }
 
     pub fn run_round(&self, moves: HashMap<PlayerId, Direction>) -> GameResult<Self> {
         let requested_destinations = moves
             .into_iter()
             .map(|(id, dir)| {
-                let player = self.players.get(&id).expect("Player did not exist?");
-                let new_tile = self
-                    .map
-                    .get_tile_translated(player.get_pos(), &dir)
-                    .expect("Failed to translate tile");
-                (id, new_tile.coord)
+                let player = self
+                    .players
+                    .get(&id)
+                    .ok_or(GameError::InvalidGameState(format!(
+                        "Player with id {id} did not exist?"
+                    )))?;
+                let new_tile = self.map.get_tile_translated(player.get_pos(), &dir)?;
+                Ok((id, new_tile.coord))
             })
-            .collect();
+            .collect::<GameResult<HashMap<PlayerId, Coordinate>>>()?;
 
         let tile_collisions = self.check_collisions(&requested_destinations);
 
@@ -199,7 +204,10 @@ fn get_player_by_coord(map: &HashMap<PlayerId, Player>, pos: &Coordinate) -> Opt
     }
 }
 
-fn create_players(map: &GameMap, player_ids: HashSet<PlayerId>) -> HashMap<PlayerId, Player> {
+fn create_players(
+    map: &GameMap,
+    player_ids: HashSet<PlayerId>,
+) -> GameResult<HashMap<PlayerId, Player>> {
     let mut starting_positions = map.get_starting_positions();
 
     if starting_positions.len() < player_ids.len() {
@@ -216,17 +224,17 @@ fn create_players(map: &GameMap, player_ids: HashSet<PlayerId>) -> HashMap<Playe
         .into_iter()
         .enumerate()
         .map(|(index, id)| {
-            (
+            Ok((
                 id.clone(),
                 Player::new(
                     id,
                     starting_positions
                         .get(index)
-                        .expect("Not enough starting positions?")
+                        .ok_or(GameError::NotEnoughStartingPositions)?
                         .clone(),
                     false,
                 ),
-            )
+            ))
         })
         .collect()
 }

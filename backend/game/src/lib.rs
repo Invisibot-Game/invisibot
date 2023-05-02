@@ -9,6 +9,7 @@
 use clients::ClientHandler;
 use game::Game;
 use game_config::GameConfig;
+use utils::game_error::GameResult;
 
 /// Types & logic intended for communication with clients.
 pub mod clients;
@@ -22,6 +23,9 @@ pub mod utils;
 mod game_logic;
 
 /// Play a game with clients provided by the client handler and the provided config as game config
-pub fn initiate_game<T: ClientHandler>(client_handler: T, config: GameConfig) -> Game<T> {
-    Game::new(client_handler, config)
+pub fn initiate_game<T: ClientHandler>(
+    client_handler: T,
+    config: GameConfig,
+) -> GameResult<Game<T>> {
+    Ok(Game::new(client_handler, config)?)
 }

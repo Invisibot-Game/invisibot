@@ -1,6 +1,6 @@
 use ::serde::{Deserialize, Serialize};
 use invisibot_game::{game::Game, game_config::GameConfig, utils::tile_type::TileType};
-use rocket::{serde::json::Json, State};
+use rocket::{http::Status, serde::json::Json, State};
 use websocket_api::WsHandler;
 
 use crate::{
@@ -34,16 +34,20 @@ pub struct PlayerResponse {
 pub fn get_game(current_game: &State<CurrentGameState>) -> GameResponse<RoundsResponse> {
     let mut curr_game = match current_game.game_mutex.lock() {
         Ok(g) => g,
-        Err(e) => return GameResponse::err(format!("Failed to lock current_game, err: {e:?}")),
+        Err(e) => {
+            error!("Failed to lock current_game, err: {e:?}");
+            return GameResponse::internal_err();
+        }
     };
 
     let running_game = match &mut curr_game.current_game {
-        None => return GameResponse::err(format!("No game available")),
+        None => return GameResponse::err(Status::NotFound, format!("No game available")),
         Some(g) => g,
     };
 
     if let Err(e) = running_game.game.run_game() {
-        return GameResponse::err(e.to_string());
+        error!("Failed to run game, err: {e:?}");
+        return GameResponse::internal_err();
     }
 
     let rounds = running_game
@@ -90,43 +94,55 @@ pub fn new_game(
     request: Json<NewGameRequest>,
     current_game: &State<CurrentGameState>,
     config: &State<Config>,
-) -> Result<String, String> {
-    let mut curr_game = current_game
-        .game_mutex
-        .lock()
-        .map_err(|e| format!("Failed to lock current_game state, err: {e:?}"))?;
+) -> GameResponse<String> {
+    let mut curr_game = match current_game.game_mutex.lock() {
+        Ok(g) => g,
+        Err(e) => {
+            error!("Failed to lock current_game state, err: {e:?}");
+            return GameResponse::internal_err();
+        }
+    };
 
     if curr_game.current_game.is_some() {
-        return Err(format!("A game is already running"));
+        return GameResponse::err(Status::BadRequest, format!("A game is already running"));
     }
 
     let ws = WsHandler::new(config.websocket_port);
-    let game = Game::new(
+    let game = match Game::new(
         ws,
         GameConfig {
             num_players: request.num_players,
             num_rounds: request.num_rounds,
             map_dir: config.map_dir.clone(),
         },
-    );
+    ) {
+        Ok(g) => g,
+        Err(e) => {
+            error!("Failed to create a new game, err: {e:?}");
+            return GameResponse::internal_err();
+        }
+    };
 
     curr_game.current_game = Some(RunningGame { game });
 
-    Ok(format!("Game created!"))
+    GameResponse::ok_with_status(format!("Game created!"), Status::Created)
 }
 
 #[delete("/game")]
-pub fn delete_game(current_game: &State<CurrentGameState>) -> Result<String, String> {
-    let mut curr_game = current_game
-        .game_mutex
-        .lock()
-        .map_err(|e| format!("Failed to lock current game state, err: {e:?}"))?;
+pub fn delete_game(current_game: &State<CurrentGameState>) -> GameResponse<String> {
+    let mut curr_game = match current_game.game_mutex.lock() {
+        Ok(g) => g,
+        Err(e) => {
+            error!("Failed to lock current game state, err: {e:?}");
+            return GameResponse::internal_err();
+        }
+    };
 
     match &mut curr_game.current_game {
-        None => return Err(format!("No game is running!")),
+        None => return GameResponse::err(Status::BadRequest, String::from("No game is running")),
         Some(_) => {}
     }
 
     curr_game.current_game = None;
-    Ok(format!("Game deleted successfully"))
+    GameResponse::ok(String::from("Game deleted successfully"))
 }
