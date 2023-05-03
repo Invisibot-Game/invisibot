@@ -104,4 +104,25 @@ impl GameMap {
     pub fn get_starting_positions(&self) -> Vec<Coordinate> {
         self.starting_positions.clone()
     }
+
+    pub fn is_pos_walkable(&self, pos: &Coordinate) -> bool {
+        let tile = if let Ok(tile) = self.get_tile_by_coord(pos) {
+            tile
+        } else {
+            return false;
+        };
+
+        tile.tile_type != TileType::Wall
+    }
+
+    pub fn get_line_of_sight(&self, coord: &Coordinate, dir: &Direction) -> Vec<Coordinate> {
+        let mut tile = coord.translate(dir);
+        let mut tiles = Vec::new();
+        while self.is_pos_walkable(&tile) {
+            tiles.push(tile.clone());
+            tile = tile.translate(dir);
+        }
+
+        tiles
+    }
 }
