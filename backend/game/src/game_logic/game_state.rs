@@ -7,12 +7,11 @@ use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    clients::player_id::PlayerId,
+    clients::{player_id::PlayerId, round_response::RoundResponse},
     utils::{
         coordinate::Coordinate,
         direction::Direction,
         game_error::{GameError, GameResult},
-        tile_type::TileType,
     },
 };
 
@@ -33,24 +32,17 @@ impl GameState {
         Ok(Self { map, players })
     }
 
-    pub fn run_round(&self, moves: HashMap<PlayerId, Direction>) -> GameResult<Self> {
-        let requested_destinations = moves
-            .into_iter()
-            .map(|(id, dir)| {
-                let player = self
-                    .players
-                    .get(&id)
-                    .ok_or(GameError::InvalidGameState(format!(
-                        "Player with id {id} did not exist?"
-                    )))?;
-                let new_tile = self.map.get_tile_translated(player.get_pos(), &dir)?;
-                Ok((id, new_tile.coord))
-            })
-            .collect::<GameResult<HashMap<PlayerId, Coordinate>>>()?;
+    pub fn run_round(&self, actions: HashMap<PlayerId, RoundResponse>) -> GameResult<Self> {
+        let shooting = Self::get_shooting(&actions);
+        let rotating = Self::get_rotating(&actions);
+        let moving = self.get_moving(&actions)?;
 
-        let tile_collisions = self.check_collisions(&requested_destinations);
+        let mut next_round_players: HashMap<PlayerId, Player> = HashMap::new();
+        self.insert_shooting(&mut next_round_players, &shooting)?;
+        self.insert_rotating(&mut next_round_players, rotating)?;
+        self.insert_moving(&mut next_round_players, &moving)?;
 
-        let next_round_players = self.next_round_players(&requested_destinations, &tile_collisions);
+        next_round_players = self.handle_shots(next_round_players, shooting)?;
 
         Ok(Self {
             map: self.map.clone(),
@@ -58,125 +50,200 @@ impl GameState {
         })
     }
 
-    fn check_collisions(
-        &self,
-        requested_destinations: &HashMap<u32, Coordinate>,
-    ) -> HashMap<Coordinate, usize> {
-        requested_destinations
+    fn get_shooting(actions: &HashMap<PlayerId, RoundResponse>) -> HashSet<PlayerId> {
+        actions
             .iter()
-            .fold(HashMap::new(), |mut acc, (_, coord)| {
-                let val = if let Some(count) = acc.get(coord) {
-                    count + 1
-                } else {
-                    1
-                };
-                acc.insert(coord.clone(), val);
-                acc
-            })
+            .filter(|&(_, resp)| resp == &RoundResponse::Shoot)
+            .map(|(p, _)| p.clone())
+            .collect()
     }
 
-    /// Figure out the next state of players
-    fn next_round_players(
-        &self,
-        requested_destinations: &HashMap<PlayerId, Coordinate>,
-        tile_collisions: &HashMap<Coordinate, usize>,
-    ) -> HashMap<PlayerId, Player> {
-        // Build a map with all 'simple' moves
-        let mut next_round_players =
-            self.players
-                .iter()
-                .fold(HashMap::new(), |mut acc, (id, player)| {
-                    if let Some((initial_move, should_be_visible)) = self.get_initial_move(
-                        player.get_pos(),
-                        id,
-                        requested_destinations,
-                        tile_collisions,
-                    ) {
-                        acc.insert(
-                            id.clone(),
-                            Player::update_pos(player, initial_move, should_be_visible),
-                        );
-                    }
-
-                    acc
-                });
-
-        // Go through the ones who haven't been handled yet
-        let unhandled_players: HashMap<PlayerId, Player> = self
-            .players
+    fn get_rotating(actions: &HashMap<PlayerId, RoundResponse>) -> HashMap<PlayerId, Direction> {
+        actions
             .iter()
-            .filter(|&(id, _)| next_round_players.contains_key(id) == false)
-            .map(|(id, player)| (id.clone(), player.clone()))
-            .collect();
+            .filter_map(|(player_id, resp)| match resp {
+                RoundResponse::Rotate(dir) => Some((player_id.clone(), dir.clone())),
+                _ => None,
+            })
+            .collect()
+    }
 
-        unhandled_players.into_iter().for_each(|(id, player)| {
-            if let Some(req) = requested_destinations.get(&id) {
-                if !pos_contains_player(&next_round_players, req) {
-                    // Currently favours the player first in the list, might want to change this to the player who is quickest to respond in the future? or smth
-                    next_round_players.insert(id, Player::update_pos(&player, req.clone(), true));
-                    return;
+    fn get_moving(
+        &self,
+        actions: &HashMap<PlayerId, RoundResponse>,
+    ) -> GameResult<HashMap<PlayerId, Coordinate>> {
+        actions
+            .iter()
+            .filter_map(|(player_id, resp)| match resp {
+                RoundResponse::Move(dir) => Some((player_id.clone(), dir.clone())),
+                _ => None,
+            })
+            .map(|(player_id, dir)| {
+                let player = self.get_player(&player_id)?;
+                let new_tile = self.map.get_tile_translated(player.get_pos(), &dir)?;
+                Ok((player_id.clone(), new_tile.coord))
+            })
+            .collect()
+    }
+
+    fn insert_shooting(
+        &self,
+        next_round_players: &mut HashMap<PlayerId, Player>,
+        shooting: &HashSet<PlayerId>,
+    ) -> GameResult<()> {
+        for id in shooting.iter() {
+            let player = self.get_player(id)?;
+            let updated_player = player.shoot();
+            next_round_players.insert(id.clone(), updated_player);
+        }
+
+        Ok(())
+    }
+
+    fn insert_rotating(
+        &self,
+        next_round_players: &mut HashMap<PlayerId, Player>,
+        rotating: HashMap<PlayerId, Direction>,
+    ) -> GameResult<()> {
+        for (id, dir) in rotating.into_iter() {
+            let player = self.get_player(&id)?;
+            let updated_player = player.rotate(dir);
+            next_round_players.insert(id, updated_player);
+        }
+
+        Ok(())
+    }
+
+    fn insert_moving(
+        &self,
+        next_round_players: &mut HashMap<PlayerId, Player>,
+        moving: &HashMap<PlayerId, Coordinate>,
+    ) -> GameResult<()> {
+        let mut unhandled_moves: HashMap<PlayerId, Coordinate> = HashMap::new();
+
+        // Insert the invalid moves
+        for (id, requested_dest) in moving.iter() {
+            if !self.map.is_pos_walkable(requested_dest)
+                || pos_contains_player(&next_round_players, requested_dest)
+            {
+                let player = self.get_player(id)?;
+                next_round_players.insert(id.clone(), player.clone());
+            } else {
+                unhandled_moves.insert(id.clone(), requested_dest.clone());
+            }
+        }
+
+        // Check for collisions before allowing any moves
+        let collisions = self.check_collisions(&unhandled_moves, next_round_players)?;
+
+        for (id, requested_dest) in unhandled_moves.into_iter() {
+            let collision = collisions
+                .get(&requested_dest)
+                .ok_or(GameError::InvalidGameState(format!(
+                    "Player not in collisions map!"
+                )))?
+                .clone();
+
+            let player = self.get_player(&id)?;
+
+            match collision {
+                0 => {
+                    return Err(GameError::InvalidGameState(format!(
+                        "0 collisions when at least 1 player wants to move there?"
+                    )));
+                }
+                1 => {
+                    let updated_player = player.update_pos(requested_dest, false);
+                    // The only player who wants to go there and nobody is currently there.
+                    next_round_players.insert(id.clone(), updated_player);
+                }
+                _ => {
+                    // Had collision
+                    let updated_player = player.update_visibility(true);
+                    next_round_players.insert(id, updated_player);
                 }
             }
-
-            next_round_players.insert(id.clone(), Player::update_visibility(&player, true));
-        });
-
-        let prev_players = self.players.len();
-        let new_players = next_round_players.len();
-        if prev_players != new_players {
-            println!("ERROR: Player count missmatch between round! Prev {prev_players}, new {new_players}");
         }
-        next_round_players
+
+        Ok(())
     }
 
-    /// Get the initial move or None if no simple move is available
-    fn get_initial_move(
+    fn check_collisions(
         &self,
-        curr: &Coordinate,
-        player_id: &PlayerId,
-        requested: &HashMap<PlayerId, Coordinate>,
-        collisions: &HashMap<Coordinate, usize>,
-    ) -> Option<(Coordinate, bool)> {
-        let req = if let Some(tile) = requested.get(player_id) {
-            tile
-        } else {
-            // No new destination was requested? Just stay in place
-            return Some((curr.clone(), false));
-        };
+        requested_destinations: &HashMap<PlayerId, Coordinate>,
+        next_round_players: &HashMap<PlayerId, Player>,
+    ) -> GameResult<HashMap<Coordinate, usize>> {
+        let mut possible_collisions: Vec<Coordinate> = Vec::new();
 
-        if !self.is_pos_walkable(req) || self.pos_contains_player(req) {
-            // Either a wall or a player is blocking us from going there.
-            println!("Player {player_id} wanted to go into a player or wall at {req:?}");
-            return Some((curr.clone(), true));
+        for (id, player) in self.players.iter() {
+            if let Some(coord) = requested_destinations.get(id) {
+                // Insert their requested coordinate
+                possible_collisions.push(coord.clone());
+
+                // Also insert their current position in case their move fails.
+                possible_collisions.push(player.get_pos().clone());
+            } else {
+                let handled_coord = next_round_players
+                    .get(id)
+                    .ok_or(GameError::InvalidGameState(format!(
+                        "Player neither in requested directions nor in next_round_players {id}"
+                    )))?
+                    .get_pos();
+
+                // The player is already handled, insert their final coordinate.
+                possible_collisions.push(handled_coord.clone());
+            };
         }
 
-        match collisions.get(req) {
-            None => {
-                println!(
-                    "WARNING: Coordinate was not in collision map {req:?}\n\nMAP: {collisions:?}"
-                );
-                Some((curr.clone(), false))
-            }
-            Some(1) => Some((req.clone(), false)), // Noone else wanted to move here, let's just do it!
-            Some(_) => None,                       // Deal with collisions later
+        Ok(possible_collisions
+            .into_iter()
+            .fold(HashMap::new(), |mut acc, coord| {
+                let new_count = if let Some(count) = acc.get(&coord) {
+                    count + 1
+                } else {
+                    1 as usize
+                };
+
+                acc.insert(coord, new_count);
+                acc
+            }))
+    }
+
+    fn get_player(&self, player_id: &PlayerId) -> GameResult<&Player> {
+        Ok(self
+            .players
+            .get(player_id)
+            .ok_or(GameError::InvalidGameState(format!(
+                "Player with id {player_id} did not exist?"
+            )))?)
+    }
+
+    fn handle_shots(
+        &self,
+        next_round_players: HashMap<PlayerId, Player>,
+        shooting_players: HashSet<PlayerId>,
+    ) -> GameResult<HashMap<PlayerId, Player>> {
+        let mut kill_on_tiles = HashSet::new();
+
+        for player_id in shooting_players.into_iter() {
+            let player = next_round_players
+                .get(&player_id)
+                .ok_or(GameError::InvalidGameState(format!(
+                    "Shooting player not in next rounds players?"
+                )))?;
+
+            self.map
+                .get_line_of_sight(player.get_pos(), player.get_rotation())
+                .into_iter()
+                .for_each(|tile| {
+                    kill_on_tiles.insert(tile);
+                });
         }
-    }
 
-    /// Checks if the provided pos is within the bounds of the map and does not contain a wall
-    fn is_pos_walkable(&self, pos: &Coordinate) -> bool {
-        let tile = if let Ok(tile) = self.map.get_tile_by_coord(pos) {
-            tile
-        } else {
-            println!("\tTILE IS OUT OF BOUNDS!");
-            return false;
-        };
-
-        tile.tile_type != TileType::Wall
-    }
-
-    /// Checks if the position currently has a player
-    fn pos_contains_player(&self, pos: &Coordinate) -> bool {
-        pos_contains_player(&self.players, pos)
+        Ok(next_round_players
+            .into_iter()
+            .filter(|(_, player)| !kill_on_tiles.contains(player.get_pos()))
+            .collect())
     }
 }
 

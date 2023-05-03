@@ -31,26 +31,48 @@ impl Player {
         &self.pos
     }
 
+    pub fn get_rotation(&self) -> &Direction {
+        &self.rotation
+    }
+
     pub fn is_visible(&self) -> bool {
         self.visible
     }
 
-    pub fn update_pos(player: &Player, new_pos: Coordinate, visible: bool) -> Self {
+    pub fn update_pos(&self, new_pos: Coordinate, visible: bool) -> Self {
         let rotation =
-            Coordinate::dir_between(&player.pos, &new_pos).unwrap_or(player.rotation.clone());
+            Coordinate::dir_between(&self.pos, &new_pos).unwrap_or(self.rotation.clone());
         Self {
-            id: player.id.clone(),
+            id: self.id.clone(),
             pos: new_pos,
             rotation,
             visible,
         }
     }
 
-    pub fn update_visibility(player: &Player, visible: bool) -> Self {
+    pub fn rotate(&self, new_rotation: Direction) -> Self {
         Self {
-            id: player.id.clone(),
-            pos: player.pos.clone(),
-            rotation: player.rotation.clone(),
+            id: self.id.clone(),
+            pos: self.pos.clone(),
+            rotation: new_rotation,
+            visible: true,
+        }
+    }
+
+    pub fn shoot(&self) -> Self {
+        Self {
+            id: self.id.clone(),
+            pos: self.pos.clone(),
+            rotation: self.rotation.clone(),
+            visible: true,
+        }
+    }
+
+    pub fn update_visibility(&self, visible: bool) -> Self {
+        Self {
+            id: self.id.clone(),
+            pos: self.pos.clone(),
+            rotation: self.rotation.clone(),
             visible,
         }
     }

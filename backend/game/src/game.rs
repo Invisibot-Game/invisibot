@@ -44,16 +44,9 @@ impl<T: ClientHandler> Game<T> {
                     .send_message(id, GameMessage::game_round(state.clone(), id.clone()));
             });
 
-            let moves: HashMap<PlayerId, RoundResponse> = self.client_handler.receive_messages();
-            moves
-                .iter()
-                .for_each(|(id, resp)| println!("Player {id} responded with {resp:?}"));
-            let moves = moves
-                .into_iter()
-                .map(|(id, resp)| (id, resp.get_dir()))
-                .collect();
+            let actions: HashMap<PlayerId, RoundResponse> = self.client_handler.receive_messages();
 
-            let new_state = state.run_round(moves)?;
+            let new_state = state.run_round(actions)?;
             states.push(state);
             state = new_state;
         }
