@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
 /// A direction
@@ -32,6 +34,21 @@ impl Direction {
             Direction::Right => Direction::Left,
             Direction::Left => Direction::Right,
         }
+    }
+}
+
+impl Display for Direction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Direction::Up => "Up",
+                Direction::Down => "Down",
+                Direction::Right => "Right",
+                Direction::Left => "Left",
+            }
+        )
     }
 }
 
@@ -75,5 +92,34 @@ mod opposite_tests {
     fn opposite_left_is_right() {
         let left = Direction::Left;
         assert_eq!(left.opposite(), Direction::Right)
+    }
+}
+
+#[cfg(test)]
+mod display_test {
+    use super::Direction;
+
+    #[test]
+    fn display_up_returns_correct() {
+        let dir = Direction::Up;
+        assert_eq!(dir.to_string(), "Up")
+    }
+
+    #[test]
+    fn display_down_returns_correct() {
+        let dir = Direction::Down;
+        assert_eq!(dir.to_string(), "Down")
+    }
+
+    #[test]
+    fn display_right_returns_correct() {
+        let dir = Direction::Right;
+        assert_eq!(dir.to_string(), "Right")
+    }
+
+    #[test]
+    fn display_left_returns_correct() {
+        let dir = Direction::Left;
+        assert_eq!(dir.to_string(), "Left")
     }
 }
