@@ -51,7 +51,36 @@ impl Coordinate {
 }
 
 #[cfg(test)]
-mod tests {
+mod translate_tests {
+    use crate::utils::{coordinate::Coordinate, direction::Direction};
+
+    #[test]
+    fn going_right_returns_right_tile_neighbour() {
+        let coord = coord!(4, 4);
+        assert_eq!(coord.translate(&Direction::Right), coord!(5, 4))
+    }
+
+    #[test]
+    fn going_down_returns_below_tile_neighbour() {
+        let coord = coord!(4, 4);
+        assert_eq!(coord.translate(&Direction::Down), coord!(4, 5))
+    }
+
+    #[test]
+    fn going_left_returns_left_tile_neighbour() {
+        let coord = coord!(4, 4);
+        assert_eq!(coord.translate(&Direction::Left), coord!(3, 4))
+    }
+
+    #[test]
+    fn going_up_returns_above_tile_neighbour() {
+        let coord = coord!(4, 4);
+        assert_eq!(coord.translate(&Direction::Up), coord!(4, 3))
+    }
+}
+
+#[cfg(test)]
+mod dir_between_tests {
     use crate::utils::{coordinate::Coordinate, direction::Direction};
 
     #[test]
