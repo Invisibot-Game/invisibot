@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
 use super::direction::Direction;
@@ -47,6 +49,23 @@ impl Coordinate {
             (x, _) if delta_x_abs > delta_y_abs && x > 0 => Direction::Left,
             (_, _) => return None,
         })
+    }
+}
+
+impl Display for Coordinate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({},{})", self.x, self.y)
+    }
+}
+
+#[cfg(test)]
+mod diplay_tests {
+    use crate::utils::coordinate::Coordinate;
+
+    #[test]
+    fn coordinate_displays_correctly() {
+        let coord = coord!(6, 3);
+        assert_eq!(coord.to_string(), String::from("(6,3)"))
     }
 }
 
