@@ -42,6 +42,7 @@ impl Player {
     pub fn update_pos(&self, new_pos: Coordinate, visible: bool) -> Self {
         let rotation =
             Coordinate::dir_between(&self.pos, &new_pos).unwrap_or(self.rotation.clone());
+
         Self {
             id: self.id.clone(),
             pos: new_pos,
