@@ -1,5 +1,9 @@
 use ::serde::{Deserialize, Serialize};
-use invisibot_game::{game::Game, game_config::GameConfig, utils::tile_type::TileType};
+use invisibot_game::{
+    game::Game,
+    game_config::GameConfig,
+    utils::{direction::Direction, tile_type::TileType},
+};
 use rocket::{http::Status, serde::json::Json, State};
 use websocket_api::WsHandler;
 
@@ -27,6 +31,7 @@ pub struct PlayerResponse {
     id: u32,
     x: u32,
     y: u32,
+    rotation: Direction,
     visible: bool,
 }
 
@@ -66,6 +71,7 @@ pub fn get_game(current_game: &State<CurrentGameState>) -> GameResponse<RoundsRe
                         id: p.get_id().clone(),
                         x: pos.x,
                         y: pos.y,
+                        rotation: p.get_rotation().clone(),
                         visible: p.is_visible(),
                     }
                 })

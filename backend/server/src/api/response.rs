@@ -83,8 +83,8 @@ impl<'r, T: Serialize + Clone> Responder<'r, 'static> for GameResponse<T> {
         }
 
         let response_data = match self.response_data {
-            ResponseData::Success(data) => json!({ "data": data }),
-            ResponseData::Failure(err_msg) => json!({ "errorMessage": err_msg }),
+            ResponseData::Success(data) => json!(data),
+            ResponseData::Failure(err_msg) => json!(err_msg),
         };
 
         let mut response = Response::build_from(response_data.respond_to(request)?);
