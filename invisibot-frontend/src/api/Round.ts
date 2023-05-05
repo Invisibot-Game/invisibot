@@ -6,4 +6,10 @@ export type Round = {
   width: number;
   height: number;
   tiles: TileType[];
+  shotTiles: Coordinate[];
 };
+
+export interface Coordinate {
+  x: number;
+  y: number;
+}
