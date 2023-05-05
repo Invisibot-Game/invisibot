@@ -1,7 +1,7 @@
 import { Round } from "@/api/Round";
 import styles from "./GameBoard.module.scss";
 import { TileType } from "@/api/TileType";
-import { Player } from "@/api/Player";
+import { Direction, Player } from "@/api/Player";
 import { useEffect, useState } from "react";
 import { RoundBar } from "@/components/elements/round_bar/RoundBar";
 
@@ -26,10 +26,12 @@ export const GameBoard = ({ rounds }: GameBoardProps) => {
 
   const state: Round = rounds[round];
 
+  console.log("Map: ", state.tiles);
+
   return (
     <div className={styles.container}>
       <div className={styles.board}>
-        {[...Array(state.width)].map((_, y) => (
+        {[...Array(state.height)].map((_, y) => (
           <div key={`row-${y}`} className={styles.gridRow}>
             {[...Array(state.height)].map((_, x) => {
               const index = y * state.width + x;
@@ -94,8 +96,13 @@ export const GameBoard = ({ rounds }: GameBoardProps) => {
 const Player = ({ player }: { player: Player | undefined }) => {
   const playerColor = getPlayerColor(player?.id);
   const invisible = player?.visible === false ? styles.invisible : "";
+  const rotation = player ? getPlayerRotation(player.rotation) : "";
   if (playerColor) {
-    return <div className={`${styles.player} ${playerColor} ${invisible}`} />;
+    return (
+      <div
+        className={`${styles.player} ${playerColor} ${invisible} ${rotation}`}
+      />
+    );
   }
 
   return <div />;
@@ -116,6 +123,20 @@ function getPlayerColor(id?: number): string {
     default:
       console.error(`No color for playerId ${id}`);
       return "";
+  }
+}
+
+function getPlayerRotation(dir: Direction): string {
+  console.log(`Player direction: ${dir}`);
+  switch (dir) {
+    case "Up":
+      return styles.playerDirectionUp;
+    case "Down":
+      return styles.playerDirectionDown;
+    case "Right":
+      return styles.playerDirectionRight;
+    case "Left":
+      return styles.playerDirectionLeft;
   }
 }
 

@@ -3,7 +3,6 @@ import { GameBoard } from "@/components/views/game_board/GameBoard";
 import { GetServerSideProps } from "next";
 import { Api } from "@/api/Api";
 import { Round } from "@/api/Round";
-import { ErrorHeader } from "@/components/views/error_header/ErrorHeader";
 import { GameControlDashboard } from "@/components/views/game_control_dashboard/GameControlDashboard";
 import { ErrorCard } from "@/components/elements/error_card/ErrorCard";
 
@@ -32,6 +31,7 @@ export default function Home({ rounds, error }: HomeProps) {
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   let response = await Api.game.get();
   if (!response.success) {
+    console.error("?? Not sure what happened here", response);
     return {
       props: {
         error: response.error ?? "Something went wrong",

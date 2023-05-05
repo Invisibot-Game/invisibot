@@ -36,23 +36,16 @@ interface RawApiResponse<T> {
 }
 
 function handleResponse<T>(
-  response: Promise<AxiosResponse<RawApiResponse<T>>>
+  response: Promise<AxiosResponse<T>>
 ): Promise<Response<T>> {
   return response
     .then((res) => {
       let resp = res.data;
-
-      if (!resp.success) {
-        return {
-          success: false,
-          failedToReachBackend: false,
-          error: resp.error,
-        };
-      }
+      console.log("THEN", res, "\n\n\n DATA \n\n\n", resp);
 
       if (res.status < 300) {
         return {
-          data: resp.data,
+          data: resp,
           success: true,
           failedToReachBackend: false,
         };
@@ -60,11 +53,12 @@ function handleResponse<T>(
 
       return {
         success: false,
-        error: "",
+        error: "Uncaught status code?",
         failedToReachBackend: false,
       };
     })
     .catch((err) => {
+      console.log("ERR", err);
       if (err.errno === -111) {
         console.error("Failed to reach backend", err);
         // Failed to reach the server
@@ -76,11 +70,12 @@ function handleResponse<T>(
       }
 
       console.error("ERROR!!! ", err);
+      let error = err as RawApiResponse<any>;
 
       return {
         success: false,
         failedToReachBackend: false,
-        error: err.toString(),
+        error: error.data,
       };
     });
 }
