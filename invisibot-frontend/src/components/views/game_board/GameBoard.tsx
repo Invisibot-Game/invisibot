@@ -1,4 +1,4 @@
-import { Round } from "@/api/Round";
+import { Coordinate, Round } from "@/api/Round";
 import styles from "./GameBoard.module.scss";
 import { TileType } from "@/api/TileType";
 import { Direction, Player } from "@/api/Player";
@@ -26,8 +26,6 @@ export const GameBoard = ({ rounds }: GameBoardProps) => {
 
   const state: Round = rounds[round];
 
-  console.log("Map: ", state.tiles);
-
   return (
     <div className={styles.container}>
       <div className={styles.board}>
@@ -42,7 +40,12 @@ export const GameBoard = ({ rounds }: GameBoardProps) => {
               const player = getPlayerAt(state, x, y);
 
               return (
-                <div key={`tile-${x}-${y}`} className={styles.tile}>
+                <div
+                  key={`tile-${x}-${y}`}
+                  className={`${styles.tile} ${
+                    tileIsShot(x, y, state.shotTiles) ? styles.shot : ""
+                  }`}
+                >
                   <div className={tileStyle}>
                     <Player player={player} />
                   </div>
@@ -127,7 +130,6 @@ function getPlayerColor(id?: number): string {
 }
 
 function getPlayerRotation(dir: Direction): string {
-  console.log(`Player direction: ${dir}`);
   switch (dir) {
     case "Up":
       return styles.playerDirectionUp;
@@ -152,4 +154,13 @@ function getPlayerAt(round: Round, x: number, y: number): Player | undefined {
   }
 
   return players[0];
+}
+
+function tileIsShot(x: number, y: number, shotTiles: Coordinate[]): boolean {
+  for (let i = 0; i < shotTiles.length; i++) {
+    if (shotTiles[i].x === x && shotTiles[i].y === y) {
+      return true;
+    }
+  }
+  return false;
 }

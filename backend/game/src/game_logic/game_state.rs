@@ -21,6 +21,7 @@ use super::{game_map::GameMap, player::Player};
 pub struct GameState {
     pub map: GameMap,
     pub players: HashMap<PlayerId, Player>,
+    pub shot_tiles: HashSet<Coordinate>,
 }
 
 impl GameState {
@@ -29,7 +30,11 @@ impl GameState {
         let map = GameMap::new(map)?;
         let players = create_players(&map, player_ids)?;
 
-        Ok(Self { map, players })
+        Ok(Self {
+            map,
+            players,
+            shot_tiles: HashSet::new(),
+        })
     }
 
     pub fn run_round(&self, actions: HashMap<PlayerId, RoundResponse>) -> GameResult<Self> {
@@ -42,11 +47,12 @@ impl GameState {
         self.insert_rotating(&mut next_round_players, rotating)?;
         self.insert_moving(&mut next_round_players, &moving)?;
 
-        next_round_players = self.handle_shots(next_round_players, shooting)?;
+        let shot_tiles = self.handle_shots(&mut next_round_players, shooting)?;
 
         Ok(Self {
             map: self.map.clone(),
             players: next_round_players,
+            shot_tiles,
         })
     }
 
@@ -220,9 +226,9 @@ impl GameState {
 
     fn handle_shots(
         &self,
-        next_round_players: HashMap<PlayerId, Player>,
+        next_round_players: &mut HashMap<PlayerId, Player>,
         shooting_players: HashSet<PlayerId>,
-    ) -> GameResult<HashMap<PlayerId, Player>> {
+    ) -> GameResult<HashSet<Coordinate>> {
         let mut kill_on_tiles = HashSet::new();
 
         for player_id in shooting_players.into_iter() {
@@ -240,10 +246,17 @@ impl GameState {
                 });
         }
 
-        Ok(next_round_players
-            .into_iter()
-            .filter(|(_, player)| !kill_on_tiles.contains(player.get_pos()))
-            .collect())
+        let players_to_delete: Vec<PlayerId> = next_round_players
+            .iter()
+            .filter(|(_, player)| kill_on_tiles.contains(player.get_pos()))
+            .map(|(id, _)| id.clone())
+            .collect();
+
+        players_to_delete.into_iter().for_each(|id| {
+            next_round_players.remove(&id);
+        });
+
+        return Ok(kill_on_tiles);
     }
 }
 

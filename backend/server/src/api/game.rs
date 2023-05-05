@@ -2,7 +2,7 @@ use ::serde::{Deserialize, Serialize};
 use invisibot_game::{
     game::Game,
     game_config::GameConfig,
-    utils::{direction::Direction, tile_type::TileType},
+    utils::{coordinate::Coordinate, direction::Direction, tile_type::TileType},
 };
 use rocket::{http::Status, serde::json::Json, State};
 use websocket_api::WsHandler;
@@ -14,19 +14,23 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RoundsResponse {
     rounds: Vec<RoundResponse>,
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RoundResponse {
     players: Vec<PlayerResponse>,
     width: u32,
     height: u32,
     tiles: Vec<TileType>,
+    shot_tiles: Vec<Coordinate>,
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PlayerResponse {
     id: u32,
     x: u32,
@@ -82,6 +86,7 @@ pub fn get_game(current_game: &State<CurrentGameState>) -> GameResponse<RoundsRe
                 .into_iter()
                 .map(|t| t.tile_type)
                 .collect::<Vec<TileType>>(),
+            shot_tiles: s.shot_tiles.into_iter().collect(),
         })
         .collect::<Vec<RoundResponse>>();
 
