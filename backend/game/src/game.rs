@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
     clients::{
@@ -38,6 +38,7 @@ impl<T: ClientHandler> Game<T> {
     pub fn run_game(&mut self) -> GameResult<()> {
         let mut states = vec![self.initial_state.clone()];
         let mut state: GameState = self.initial_state.clone();
+
         for _ in 0..(self.config.num_rounds - 1) {
             state.players.iter().for_each(|(id, _)| {
                 self.client_handler
@@ -46,7 +47,13 @@ impl<T: ClientHandler> Game<T> {
 
             let actions: HashMap<PlayerId, RoundResponse> = self.client_handler.receive_messages();
 
-            let new_state = state.run_round(actions)?;
+            let (new_state, dead_players) = state.run_round(actions)?;
+            dead_players.into_iter().for_each(|id: u32| {
+                self.client_handler
+                    .broadcast_message(GameMessage::player_killed(id));
+                self.client_handler.disconnect_player(&id);
+            });
+
             states.push(state);
             state = new_state;
         }

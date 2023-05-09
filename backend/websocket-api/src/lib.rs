@@ -73,6 +73,15 @@ impl ClientHandler for WsHandler {
             .collect()
     }
 
+    fn disconnect_player(&mut self, player_id: &PlayerId) {
+        let mut p = self
+            .clients
+            .remove(player_id)
+            .expect("Tried to disconnect nonexistant player");
+
+        p.close(None).expect("Dammit, failed to disconnect player");
+    }
+
     fn close(&mut self) {
         self.clients
             .iter_mut()
