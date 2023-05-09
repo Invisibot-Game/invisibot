@@ -37,23 +37,29 @@ impl GameState {
         })
     }
 
-    pub fn run_round(&self, actions: HashMap<PlayerId, RoundResponse>) -> GameResult<Self> {
+    pub fn run_round(
+        &self,
+        actions: HashMap<PlayerId, RoundResponse>,
+    ) -> GameResult<(Self, HashSet<PlayerId>)> {
         let shooting = Self::get_shooting(&actions);
         let rotating = Self::get_rotating(&actions);
         let moving = self.get_moving(&actions)?;
 
-        let mut next_round_players: HashMap<PlayerId, Player> = HashMap::new();
+        let mut next_round_players = HashMap::new();
         self.insert_shooting(&mut next_round_players, &shooting)?;
         self.insert_rotating(&mut next_round_players, rotating)?;
-        self.insert_moving(&mut next_round_players, &moving)?;
+        self.insert_moving(&mut next_round_players, moving)?;
 
-        let shot_tiles = self.handle_shots(&mut next_round_players, shooting)?;
+        let (shot_tiles, dead_players) = self.handle_shots(&mut next_round_players, shooting)?;
 
-        Ok(Self {
-            map: self.map.clone(),
-            players: next_round_players,
-            shot_tiles,
-        })
+        Ok((
+            Self {
+                map: self.map.clone(),
+                players: next_round_players,
+                shot_tiles,
+            },
+            dead_players,
+        ))
     }
 
     fn get_shooting(actions: &HashMap<PlayerId, RoundResponse>) -> HashSet<PlayerId> {
@@ -123,7 +129,7 @@ impl GameState {
     fn insert_moving(
         &self,
         next_round_players: &mut HashMap<PlayerId, Player>,
-        moving: &HashMap<PlayerId, Coordinate>,
+        moving: HashMap<PlayerId, Coordinate>,
     ) -> GameResult<()> {
         let mut unhandled_moves: HashMap<PlayerId, Coordinate> = HashMap::new();
 
@@ -228,7 +234,7 @@ impl GameState {
         &self,
         next_round_players: &mut HashMap<PlayerId, Player>,
         shooting_players: HashSet<PlayerId>,
-    ) -> GameResult<HashSet<Coordinate>> {
+    ) -> GameResult<(HashSet<Coordinate>, HashSet<PlayerId>)> {
         let mut kill_on_tiles = HashSet::new();
 
         for player_id in shooting_players.into_iter() {
@@ -246,17 +252,17 @@ impl GameState {
                 });
         }
 
-        let players_to_delete: Vec<PlayerId> = next_round_players
+        let players_to_delete: HashSet<PlayerId> = next_round_players
             .iter()
             .filter(|(_, player)| kill_on_tiles.contains(player.get_pos()))
             .map(|(id, _)| id.clone())
             .collect();
 
-        players_to_delete.into_iter().for_each(|id| {
+        players_to_delete.iter().for_each(|id| {
             next_round_players.remove(&id);
         });
 
-        return Ok(kill_on_tiles);
+        Ok((kill_on_tiles, players_to_delete))
     }
 }
 

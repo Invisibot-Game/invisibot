@@ -18,6 +18,10 @@ pub enum GameMessage {
     GameRound(GameRound),
     /// A message sent as the game is over before the server closes the connection.
     ClientGoodbye(String),
+    /// A player was killed.
+    PlayerKilled(PlayerId),
+    /// A player won
+    PlayerWon(PlayerId),
 }
 
 impl GameMessage {
@@ -36,13 +40,20 @@ impl GameMessage {
         Self::ClientGoodbye(message)
     }
 
+    /// Sent between rounds if a player was killed last round.
+    pub fn player_killed(player: PlayerId) -> Self {
+        Self::PlayerKilled(player)
+    }
+
     /// Returns the message type in a human readable format.
     pub fn message_type(&self) -> String {
-        String::from(match self {
-            Self::ClientHello(_) => "Client Hello",
-            Self::GameRound(_) => "Game Round",
-            Self::ClientGoodbye(_) => "Client Goodbye",
-        })
+        match self {
+            Self::ClientHello(_) => "Client Hello".to_string(),
+            Self::GameRound(_) => "Game Round".to_string(),
+            Self::ClientGoodbye(_) => "Client Goodbye".to_string(),
+            Self::PlayerKilled(id) => format!("Player {id} was killed"),
+            Self::PlayerWon(id) => format!("Player {id} won the game!"),
+        }
     }
 }
 

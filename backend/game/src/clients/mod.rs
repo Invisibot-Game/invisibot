@@ -30,6 +30,9 @@ pub trait ClientHandler {
         &mut self,
     ) -> HashMap<PlayerId, ResponseMessage>;
 
+    /// Disconnect a player, typically happens when they die.
+    fn disconnect_player(&mut self, player_id: &PlayerId);
+
     /// Close connections (if applicable) to all clients.
     /// Indicates that there will be no more messages from the server.
     fn close(&mut self);
