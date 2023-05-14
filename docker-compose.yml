@@ -1,5 +1,19 @@
 version: "3"
 services:
+  db:
+    image: postgres:13.2
+    environment:
+      POSTGRES_DB: ${PG_DATABASE}
+      POSTGRES_USER: ${PG_USERNAME}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    ports:
+      - ${PG_PORT}:5432
+
+  adminer:
+    image: adminer
+    ports:
+      - ${ADMINER_PORT}:8080
+
   backend:
     build:
       context: backend
@@ -7,6 +21,13 @@ services:
     ports:
       - ${BACKEND_PORT}:8000
       - ${WEBSOCKET_PORT}:4900
+    environment:
+      DATABASE_URL: postgres://${PG_USERNAME}:${PG_PASSWORD}@db/${PG_DATABASE}
+      ROCKET_ADDRESS: 0.0.0.0
+      ROCKET_PORT: 8000
+      WEBSOCKET_PORT: 4900
+      MAP_DIR: ./resources/maps/game_map_2.bmp
+      DEVELOPMENT_MODE: true
     volumes:
       - ./backend:/app
       - /app/target
