@@ -1,2 +1,2 @@
 [workspace]
-members = ["game", "server", "websocket-api"]
+members = ["game", "server", "websocket-api", "postgres"]
