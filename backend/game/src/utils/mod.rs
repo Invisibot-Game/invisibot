@@ -4,5 +4,3 @@ pub mod coordinate;
 pub mod direction;
 #[doc = "inline"]
 pub mod game_error;
-#[doc = "inline"]
-pub mod tile_type;
