@@ -1,0 +1,20 @@
+[package]
+name = "invisibot_postgres"
+version = "0.1.0"
+edition = "2021"
+workspace = ".."
+
+[dependencies]
+sqlx = { version = "0.6", features = [
+    "runtime-async-std-rustls",
+    "postgres",
+    "macros",
+    "migrate",
+    "chrono",
+    "uuid",
+    "offline",
+] }
+thiserror = "1.0"
+
+[dependencies.invisibot_game]
+path = "../game"
