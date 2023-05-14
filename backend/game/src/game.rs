@@ -7,6 +7,7 @@ use crate::{
     },
     game_config::GameConfig,
     game_logic::game_state::GameState,
+    game_map::player::Player,
     persistence::{GameId, PersistenceHandler},
     utils::game_error::GameResult,
 };
@@ -79,6 +80,30 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
 
             states.push(state);
             state = new_state;
+
+            match state.players.len() {
+                0 => {
+                    // Nobody won
+                    break;
+                }
+                1 => {
+                    // We have a winner!
+                    let winning_player = state
+                        .players
+                        .values()
+                        .collect::<Vec<&Player>>()
+                        .first()
+                        .unwrap() // We just validated that there were a player left.
+                        .get_id()
+                        .clone();
+
+                    self.client_handler
+                        .send_message(&winning_player, GameMessage::PlayerWon(winning_player));
+
+                    break;
+                }
+                _ => { /* Game's still going */ }
+            }
         }
 
         self.client_handler

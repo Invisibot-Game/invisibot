@@ -42,6 +42,11 @@ impl GameMessage {
         Self::PlayerKilled(player)
     }
 
+    /// Sent to the player who won to inform them of that fact.
+    pub fn player_won(player: PlayerId) -> Self {
+        Self::PlayerWon(player)
+    }
+
     /// Returns the message type in a human readable format.
     pub fn message_type(&self) -> String {
         match self {
