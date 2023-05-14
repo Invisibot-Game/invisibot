@@ -8,14 +8,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     clients::{player_id::PlayerId, round_response::RoundResponse},
+    game_map::{game_map::GameMap, player::Player},
     utils::{
         coordinate::Coordinate,
         direction::Direction,
         game_error::{GameError, GameResult},
     },
 };
-
-use super::{game_map::GameMap, player::Player};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameState {
@@ -27,7 +26,7 @@ pub struct GameState {
 impl GameState {
     pub fn new(player_ids: HashSet<PlayerId>, map_dir: &str) -> GameResult<Self> {
         let map = Path::new(map_dir);
-        let map = GameMap::new(map)?;
+        let map = GameMap::load_from_image(map)?;
         let players = create_players(&map, player_ids)?;
 
         Ok(Self {
