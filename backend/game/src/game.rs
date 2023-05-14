@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use crate::{
     clients::{
@@ -7,39 +7,53 @@ use crate::{
     },
     game_config::GameConfig,
     game_logic::game_state::GameState,
+    persistence::{GameId, PersistenceHandler},
     utils::game_error::GameResult,
 };
 
 /// A particular game.
-pub struct Game<Handler: ClientHandler> {
+pub struct Game<C: ClientHandler, P: PersistenceHandler> {
+    game_id: GameId,
     config: GameConfig,
     initial_state: GameState,
     game_rounds: Vec<GameState>,
-    client_handler: Handler,
+    client_handler: C,
+    persistence_handler: P,
 }
 
-impl<T: ClientHandler> Game<T> {
+impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
     /// Create a new game with the `client_handler` for communicating with clients and the settings specified in `game_config`.
-    pub fn new(client_handler: T, game_config: GameConfig) -> GameResult<Self> {
+    pub async fn new(
+        client_handler: C,
+        persistence_handler: P,
+        game_config: GameConfig,
+    ) -> GameResult<Self> {
         let mut client_handler = client_handler;
         let clients = client_handler.accept_clients(game_config.num_players);
 
         client_handler.broadcast_message(GameMessage::hello(format!("Welcome to the game!")));
 
+        let initial_game_state = GameState::new(clients, &game_config.map_dir)?;
+        let game_id = persistence_handler
+            .new_game(initial_game_state.map.clone())
+            .await?;
+
         Ok(Self {
-            initial_state: GameState::new(clients, &game_config.map_dir)?,
+            game_id,
+            initial_state: initial_game_state,
             game_rounds: vec![],
-            client_handler,
             config: game_config,
+            client_handler,
+            persistence_handler,
         })
     }
 
     /// Simulate the entire game, mutating itself and storing all the states, use `get_game_rounds` to retrieve the states generated.
-    pub fn run_game(&mut self) -> GameResult<()> {
+    pub async fn run_game(&mut self) -> GameResult<()> {
         let mut states = vec![self.initial_state.clone()];
         let mut state: GameState = self.initial_state.clone();
 
-        for _ in 0..(self.config.num_rounds - 1) {
+        for round_number in 0..(self.config.num_rounds - 1) {
             state.players.iter().for_each(|(id, _)| {
                 self.client_handler
                     .send_message(id, GameMessage::game_round(state.clone(), id.clone()));
@@ -54,6 +68,15 @@ impl<T: ClientHandler> Game<T> {
                 self.client_handler.disconnect_player(&id);
             });
 
+            self.persistence_handler
+                .save_round(
+                    self.game_id,
+                    round_number as u32,
+                    state.players.iter().map(|(_, p)| p.clone()).collect(),
+                    state.shot_tiles.iter().map(|t| t.clone()).collect(),
+                )
+                .await?;
+
             states.push(state);
             state = new_state;
         }
@@ -63,11 +86,23 @@ impl<T: ClientHandler> Game<T> {
         self.client_handler.close();
         self.game_rounds = states;
 
+        self.persistence_handler.game_done(self.game_id).await?;
+
         Ok(())
     }
 
     /// Get the states that occurred during the game, will be empty if `run_game` is not called first.
     pub fn get_game_rounds(&self) -> Vec<GameState> {
         self.game_rounds.clone()
+    }
+
+    /// Get the id for this game.
+    pub fn get_id(&self) -> GameId {
+        self.game_id.clone()
+    }
+
+    /// Cleanup after this game.
+    pub fn cleanup(&mut self) {
+        self.client_handler.close();
     }
 }

@@ -1,10 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::{
-    game_logic::game_state::GameState,
-    utils::{coordinate::Coordinate, tile_type::TileType},
-};
+use crate::{game_logic::game_state::GameState, utils::coordinate::Coordinate};
 
 use super::player_id::PlayerId;
 
@@ -74,13 +71,7 @@ pub struct GameRound {
 
 impl GameRound {
     fn new(game_state: &GameState, current_player: &PlayerId) -> Self {
-        let walls = game_state
-            .map
-            .tiles
-            .iter()
-            .filter(|t| t.tile_type == TileType::Wall)
-            .map(|t| t.coord.clone())
-            .collect();
+        let walls = game_state.map.get_wall_coords();
 
         let visible_players = game_state
             .players
