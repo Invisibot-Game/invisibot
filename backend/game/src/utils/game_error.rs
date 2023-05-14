@@ -10,9 +10,15 @@ pub enum GameError {
     /// The map lacked enough starting locations for players.
     #[error("The map does not have enough starting locations to support the configured amount of players")]
     NotEnoughStartingPositions,
-    /// Failed to load the map file
+    /// Failed to load the map file.
     #[error("Failed to load map file")]
     MapLoadError,
+    /// Failed to parse a direction from a string.
+    #[error("Invalid direction `{0}`")]
+    InvalidDirection(String),
+    /// Something went wrong with persisting game information.
+    #[error("Persistance error `{0}`")]
+    PersistanceError(String),
 }
 
 #[doc = "hidden"]

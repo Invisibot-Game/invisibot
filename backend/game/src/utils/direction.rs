@@ -2,6 +2,8 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
+use super::game_error::GameError;
+
 /// A direction
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum Direction {
@@ -49,6 +51,20 @@ impl Display for Direction {
                 Direction::Left => "Left",
             }
         )
+    }
+}
+
+impl TryFrom<String> for Direction {
+    type Error = GameError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Ok(match value.to_lowercase().as_str() {
+            "up" => Direction::Up,
+            "down" => Direction::Down,
+            "right" => Direction::Right,
+            "left" => Direction::Left,
+            v => return Err(GameError::InvalidDirection(v.to_string())),
+        })
     }
 }
 
