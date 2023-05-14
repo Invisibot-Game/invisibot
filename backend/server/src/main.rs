@@ -1,8 +1,8 @@
 #![forbid(unsafe_code)]
 
-use api::game::{delete_game, get_game, new_game};
+use api::game::{get_game, new_game};
 use config::Config;
-use current_game::CurrentGameState;
+use invisibot_postgres::db_connection::DBConnection;
 use rocket::{
     fairing::{Fairing, Info, Kind},
     http::Header,
@@ -14,15 +14,16 @@ extern crate rocket;
 
 mod api;
 mod config;
-mod current_game;
 
 #[launch]
 async fn rocket() -> _ {
     let config = Config::new().expect("Failed to load config");
 
+    let database_connection = DBConnection::new(&config.database_url).await;
+
     let mut rocket = rocket::build()
-        .mount("/api", routes![get_game, new_game, delete_game])
-        .manage(CurrentGameState::default());
+        .mount("/api", routes![get_game, new_game])
+        .manage(database_connection);
 
     if config.development_mode {
         rocket = rocket.attach(Cors);

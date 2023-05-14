@@ -26,6 +26,7 @@ pub struct Config {
     pub websocket_port: u32,
     pub map_dir: String,
     pub development_mode: bool,
+    pub database_url: String,
 }
 
 impl Config {
@@ -36,6 +37,7 @@ impl Config {
             websocket_port: load_env_num("WEBSOCKET_PORT")?,
             map_dir: load_env_str("MAP_DIR")?,
             development_mode: load_env_bool("DEVELOPMENT_MODE")?,
+            database_url: load_env_str("DATABASE_URL")?,
         })
     }
 }
