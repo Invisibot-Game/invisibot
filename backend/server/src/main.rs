@@ -14,6 +14,7 @@ extern crate rocket;
 
 mod api;
 mod config;
+mod ws_pool;
 
 #[launch]
 async fn rocket() -> _ {
