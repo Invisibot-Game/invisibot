@@ -6,6 +6,8 @@ CREATE TABLE game (
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
+    num_players INT NOT NULL,
+
     PRIMARY KEY (id)
 );
 

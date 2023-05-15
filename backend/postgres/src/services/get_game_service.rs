@@ -13,10 +13,10 @@ use crate::{
     db_connection::DBConnection,
     postgres_error::PostgresResult,
     repositories::{
-        map_repository, map_wall_repository, player_repository, round_repository,
+        game_repository, map_repository, map_wall_repository, player_repository, round_repository,
         shot_tile_repository, starting_position_repository,
     },
-    tables::player::Player,
+    tables::{game::Game, player::Player},
 };
 
 pub async fn get_finished_game(
@@ -90,4 +90,10 @@ fn player_to_round_player(player: Player) -> PostgresResult<RoundPlayer> {
         rotation: Direction::try_from(player.rotation)?,
         visible: player.visible,
     })
+}
+
+pub async fn get_game_num_players(conn: &DBConnection, game_id: GameId) -> PostgresResult<u32> {
+    let mut transaction = conn.new_transaction().await?;
+    let game = game_repository::get_game_by_id(&mut transaction, game_id).await?;
+    Ok(game.num_players as u32)
 }
