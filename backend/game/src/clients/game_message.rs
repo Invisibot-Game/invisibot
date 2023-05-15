@@ -10,7 +10,7 @@ use super::player_id::PlayerId;
 #[serde(tag = "type", content = "payload")]
 pub enum GameMessage {
     /// A welcome message sent to the clients as they connect.
-    ClientHello(String),
+    ClientHello,
     /// A message sent on each game round requesting moves from the clients.
     GameRound(GameRound),
     /// A message sent as the game is over before the server closes the connection.
@@ -23,8 +23,8 @@ pub enum GameMessage {
 
 impl GameMessage {
     /// Creates an instance of the ClientHello message.
-    pub fn hello(message: String) -> Self {
-        Self::ClientHello(message)
+    pub fn hello() -> Self {
+        Self::ClientHello
     }
 
     /// Creates an instance of the GameRound message.
@@ -50,7 +50,7 @@ impl GameMessage {
     /// Returns the message type in a human readable format.
     pub fn message_type(&self) -> String {
         match self {
-            Self::ClientHello(_) => "Client Hello".to_string(),
+            Self::ClientHello => "Client Hello".to_string(),
             Self::GameRound(_) => "Game Round".to_string(),
             Self::ClientGoodbye(_) => "Client Goodbye".to_string(),
             Self::PlayerKilled(id) => format!("Player {id} was killed"),

@@ -12,50 +12,34 @@ use serde::de::DeserializeOwned;
 #[doc(hidden)]
 use tungstenite::{accept, Message, WebSocket};
 
-type WsClient = WebSocket<TcpStream>;
-
 #[derive(Debug)]
 pub struct WsHandler {
-    server: TcpListener,
     clients: HashMap<PlayerId, WsClient>,
 }
 
 impl ClientHandler for WsHandler {
+    // TODO: REMOVE
     fn accept_clients(&mut self, num_clients: usize) -> HashSet<PlayerId> {
-        for stream in self.server.incoming() {
-            let websocket = accept(stream.unwrap()).unwrap();
-            self.clients.insert(self.clients.len() as u32, websocket);
-            if self.clients.len() >= num_clients {
-                break;
-            }
-        }
-
-        self.clients.iter().map(|(id, _)| id.clone()).collect()
+        HashSet::new()
     }
 
     fn broadcast_message(&mut self, message: GameMessage) {
-        let serialized = serde_json::to_string(&message).unwrap();
-
-        self.clients.iter_mut().for_each(|(_, client)| {
-            client
-                .write_message(Message::text(&serialized))
-                .expect("Failed to send message")
-        })
+        self.clients
+            .iter_mut()
+            .for_each(|(_, client)| client.send_message(message))
     }
 
     fn broadcast_text(&mut self, message: String) {
         self.clients
             .iter_mut()
-            .for_each(|(_, client)| client.write_message(Message::text(&message)).unwrap());
+            .for_each(|(_, client)| client.send_text(message))
     }
 
     fn send_message(&mut self, player_id: &PlayerId, message: GameMessage) {
-        let serialized = serde_json::to_string(&message).unwrap();
         self.clients
             .get_mut(player_id)
             .unwrap()
-            .write_message(Message::text(&serialized))
-            .expect("Failed to send message")
+            .send_message(message);
     }
 
     fn receive_messages<ResponseMessage: DeserializeOwned>(
@@ -63,12 +47,9 @@ impl ClientHandler for WsHandler {
     ) -> HashMap<PlayerId, ResponseMessage> {
         self.clients
             .iter_mut()
-            .map(|(id, client)| (id, client.read_message().unwrap()))
-            .map(|(id, c)| {
-                let text_response = c.to_text().expect("Failed to read text from response");
-                let json = serde_json::from_str(text_response)
-                    .expect("Failed to parse json from response");
-                (id.clone(), json)
+            .map(|(id, client)| {
+                let response = client.receive_message();
+                (id.clone(), response)
             })
             .collect()
     }
@@ -79,25 +60,60 @@ impl ClientHandler for WsHandler {
             .remove(player_id)
             .expect("Tried to disconnect nonexistant player");
 
-        p.close(None).expect("Dammit, failed to disconnect player");
+        p.close();
     }
 
     fn close(&mut self) {
         self.clients
             .iter_mut()
-            .for_each(|(_, client)| client.close(None).unwrap())
+            .for_each(|(_, client)| client.close())
     }
 }
 
 impl WsHandler {
-    pub fn new(websocket_port: u32) -> WsHandler {
-        println!("Setting up websocket connections");
-        let server =
-            TcpListener::bind(format!("0.0.0.0:{websocket_port}")).expect("Failed to bind to port");
-
+    pub fn new() -> WsHandler {
         WsHandler {
-            server: server,
             clients: HashMap::new(),
         }
+    }
+
+    pub fn add_player(&mut self, ws: WsClient) {
+        let player_id = self.clients.len() as PlayerId;
+        self.clients.insert(player_id, ws);
+    }
+}
+
+pub struct WsClient {
+    conn: WebSocket<TcpStream>,
+}
+
+impl WsClient {
+    pub fn new(conn: WebSocket<TcpStream>) -> Self {
+        Self { conn }
+    }
+
+    pub fn send_message(&mut self, message: GameMessage) {
+        let serialized = serde_json::to_string(&message).unwrap();
+        self.conn
+            .write_message(Message::text(&serialized))
+            .expect("Failed to send message")
+    }
+
+    pub fn send_text(&mut self, text: String) {
+        self.conn.write_message(Message::Text(text)).unwrap();
+    }
+
+    pub fn receive_message<ResponseMessage: DeserializeOwned>(&mut self) -> ResponseMessage {
+        let response = self.conn.read_message().unwrap();
+        let text_response = response
+            .to_text()
+            .expect("Failed to read text from response");
+        serde_json::from_str(text_response).expect("Failed to parse json from response")
+    }
+
+    pub fn close(&mut self) {
+        self.conn
+            .close(None)
+            .expect("Dammit, failed to disconnect player");
     }
 }

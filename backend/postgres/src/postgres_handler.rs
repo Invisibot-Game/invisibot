@@ -7,10 +7,12 @@ use invisibot_game::{
 
 use crate::{
     db_connection::DBConnection,
+    postgres_error::PostgresResult,
     services::{get_game_service, new_game_service, round_service},
 };
 
 /// A persistence handler for postgres
+#[derive(Debug, Clone)]
 pub struct PostgresHandler {
     connection: DBConnection,
 }
@@ -18,7 +20,7 @@ pub struct PostgresHandler {
 #[async_trait]
 impl PersistenceHandler for PostgresHandler {
     async fn new_game(&self, map: GameMap) -> GameResult<GameId> {
-        Ok(new_game_service::insert_new_game(&self.connection, map)
+        Ok(new_game_service::insert_new_game(&self.connection, map, 5)
             .await
             .map_err(|e| e.into())?)
     }
@@ -54,5 +56,10 @@ impl PostgresHandler {
         PostgresHandler {
             connection: connection.clone(),
         }
+    }
+
+    /// Returns the number of players for this game or an error if the game does not exist (or another error occurred).
+    pub async fn get_num_players_for_game(&self, game_id: GameId) -> PostgresResult<u32> {
+        get_game_service::get_game_num_players(&self.connection, game_id).await
     }
 }

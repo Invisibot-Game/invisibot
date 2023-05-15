@@ -8,10 +8,14 @@ use crate::{
     },
 };
 
-pub async fn insert_new_game(conn: &DBConnection, game_map: GameMap) -> PostgresResult<GameId> {
+pub async fn insert_new_game(
+    conn: &DBConnection,
+    game_map: GameMap,
+    num_players: u32,
+) -> PostgresResult<GameId> {
     let mut transaction = conn.new_transaction().await?;
 
-    let game = game_repository::insert(&mut transaction).await?;
+    let game = game_repository::insert(&mut transaction, num_players).await?;
 
     let map =
         map_repository::insert(&mut transaction, game.id, game_map.width, game_map.height).await?;

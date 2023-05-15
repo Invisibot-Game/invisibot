@@ -32,8 +32,6 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
         let mut client_handler = client_handler;
         let clients = client_handler.accept_clients(game_config.num_players);
 
-        client_handler.broadcast_message(GameMessage::hello(format!("Welcome to the game!")));
-
         let initial_game_state = GameState::new(clients, &game_config.map_dir)?;
         let game_id = persistence_handler
             .new_game(initial_game_state.map.clone())

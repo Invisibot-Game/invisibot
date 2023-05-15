@@ -7,4 +7,5 @@ use sqlx::types::{
 pub struct Game {
     pub id: Uuid,
     pub created_at: DateTime<Utc>,
+    pub num_players: i32,
 }
