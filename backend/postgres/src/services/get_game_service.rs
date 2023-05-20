@@ -1,6 +1,7 @@
 use invisibot_game::{
     clients::player_id::PlayerId,
     coord,
+    game_config::GameConfig,
     game_map::game_map::GameMap,
     persistence::{
         completed_game::{CompletedGame, GameRound, RoundPlayer},
@@ -16,7 +17,7 @@ use crate::{
         game_repository, map_repository, map_wall_repository, player_repository, round_repository,
         shot_tile_repository, starting_position_repository,
     },
-    tables::{game::Game, player::Player},
+    tables::player::Player,
 };
 
 pub async fn get_finished_game(
@@ -96,4 +97,14 @@ pub async fn get_game_num_players(conn: &DBConnection, game_id: GameId) -> Postg
     let mut transaction = conn.new_transaction().await?;
     let game = game_repository::get_game_by_id(&mut transaction, game_id).await?;
     Ok(game.num_players as u32)
+}
+
+pub async fn get_game_config(conn: &DBConnection, game_id: GameId) -> PostgresResult<GameConfig> {
+    let mut transaction = conn.new_transaction().await?;
+    let game = game_repository::get_game_by_id(&mut transaction, game_id).await?;
+    Ok(GameConfig {
+        num_players: game.num_players as usize,
+        num_rounds: game.max_num_rounds as usize,
+        map_dir: game.map_dir,
+    })
 }

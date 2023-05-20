@@ -5,8 +5,11 @@ CREATE TABLE game (
     id UUID DEFAULT uuid_generate_v4(),
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    started_at TIMESTAMPTZ DEFAULT NULL,
 
     num_players INT NOT NULL,
+    max_num_rounds INT NOT NULL,
+    map_dir TEXT NOT NULL,
 
     PRIMARY KEY (id)
 );

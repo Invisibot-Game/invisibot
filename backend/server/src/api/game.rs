@@ -1,7 +1,5 @@
 use ::serde::{Deserialize, Serialize};
 use invisibot_game::{
-    game::Game,
-    game_config::GameConfig,
     persistence::{
         completed_game::{CompletedGame, RoundPlayer},
         GameId,
@@ -11,7 +9,6 @@ use invisibot_game::{
 use invisibot_postgres::{db_connection::DBConnection, postgres_handler::PostgresHandler};
 use rocket::{http::Status, serde::json::Json, State};
 use uuid::Uuid;
-use websocket_api::WsHandler;
 
 use crate::{api::response::GameResponse, config::Config};
 
@@ -89,40 +86,25 @@ pub async fn new_game(
     db_connection: &State<DBConnection>,
     config: &State<Config>,
 ) -> GameResponse<NewGameResponse> {
-    let ws = WsHandler::new(config.websocket_port);
-    let mut game = match Game::new(
-        ws,
-        PostgresHandler::new(&db_connection),
-        GameConfig {
-            num_players: request.num_players,
-            num_rounds: request.num_rounds,
-            map_dir: config.map_dir.clone(),
-        },
-    )
-    .await
+    // TODO: Weird to create a new postgres handler every request, figure that out.
+    let pg_handler = PostgresHandler::new(&db_connection);
+
+    let game_id = match pg_handler
+        .new_game(
+            request.num_players as u32,
+            request.num_rounds as u32,
+            config.map_dir.clone(),
+        )
+        .await
     {
-        Ok(g) => g,
+        Ok(id) => id,
         Err(e) => {
-            error!("Failed to create a new game, err: {e:?}");
+            error!("Failed to create new game, err: {e}");
             return GameResponse::internal_err();
         }
     };
 
-    match game.run_game().await {
-        Ok(_) => {}
-        Err(e) => {
-            println!("An error occurred whilst simulating the game, err: {e}");
-            game.cleanup();
-            return GameResponse::err(Status::UnprocessableEntity, e.to_string());
-        }
-    }
-
-    GameResponse::ok_with_status(
-        NewGameResponse {
-            game_id: game.get_id(),
-        },
-        Status::Created,
-    )
+    GameResponse::ok_with_status(NewGameResponse { game_id }, Status::Created)
 }
 
 fn completed_game_to_rounds_response(completed_game: CompletedGame) -> Vec<RoundResponse> {
