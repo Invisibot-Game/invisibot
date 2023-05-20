@@ -4,8 +4,6 @@ use std::collections::HashMap;
 use self::{game_message::GameMessage, player_id::PlayerId};
 
 #[doc = "inline"]
-pub mod connect_response;
-#[doc = "inline"]
 pub mod game_message;
 #[doc = "inline"]
 pub mod player_id;
