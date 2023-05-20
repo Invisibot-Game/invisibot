@@ -1,5 +1,6 @@
 use invisibot_game::{
     async_trait::async_trait,
+    game_config::GameConfig,
     game_map::{game_map::GameMap, player::Player},
     persistence::{completed_game::CompletedGame, GameId, PersistenceHandler},
     utils::{coordinate::Coordinate, game_error::GameResult},
@@ -8,7 +9,7 @@ use invisibot_game::{
 use crate::{
     db_connection::DBConnection,
     postgres_error::PostgresResult,
-    services::{get_game_service, new_game_service, round_service},
+    services::{get_game_service, new_game_service, round_service, update_game_service},
 };
 
 /// A persistence handler for postgres
@@ -19,10 +20,18 @@ pub struct PostgresHandler {
 
 #[async_trait]
 impl PersistenceHandler for PostgresHandler {
-    async fn new_game(&self, map: GameMap) -> GameResult<GameId> {
-        Ok(new_game_service::insert_new_game(&self.connection, map, 5)
+    async fn get_game_config(&self, game_id: GameId) -> GameResult<GameConfig> {
+        get_game_service::get_game_config(&self.connection, game_id)
             .await
-            .map_err(|e| e.into())?)
+            .map_err(|e| e.into())
+    }
+
+    async fn set_game_map(&self, game_id: GameId, map: GameMap) -> GameResult<()> {
+        update_game_service::set_game_map(&self.connection, game_id, map)
+            .await
+            .map_err(|e| e.into())?;
+
+        Ok(())
     }
 
     async fn save_round(
@@ -56,6 +65,25 @@ impl PostgresHandler {
         PostgresHandler {
             connection: connection.clone(),
         }
+    }
+
+    /// Start a new game
+    pub async fn new_game(
+        &self,
+        num_players: u32,
+        num_rounds: u32,
+        map_dir: String,
+    ) -> GameResult<GameId> {
+        Ok(
+            new_game_service::insert_new_game(&self.connection, num_players, num_rounds, map_dir)
+                .await
+                .map_err(|e| e.into())?,
+        )
+    }
+
+    /// Mark a game as started.
+    pub async fn set_game_started(&self, game_id: GameId) -> PostgresResult<()> {
+        update_game_service::set_game_started(&self.connection, game_id).await
     }
 
     /// Returns the number of players for this game or an error if the game does not exist (or another error occurred).

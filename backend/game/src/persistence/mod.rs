@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use uuid::Uuid;
 
 use crate::{
+    game_config::GameConfig,
     game_map::{game_map::GameMap, player::Player},
     utils::{coordinate::Coordinate, game_error::GameResult},
 };
@@ -17,8 +18,8 @@ pub type GameId = Uuid;
 /// A handler that is capable of storing games and retrieving them for later replay.
 #[async_trait]
 pub trait PersistenceHandler {
-    /// Store a new game that hasn't begun yet returning a unique ID for future reference.
-    async fn new_game(&self, map: GameMap) -> GameResult<GameId>;
+    /// Set the map to be used for the game with the provided `game_id`.
+    async fn set_game_map(&self, game_id: GameId, map: GameMap) -> GameResult<()>;
 
     /// Save a finished round to the game.
     async fn save_round(
@@ -34,4 +35,7 @@ pub trait PersistenceHandler {
 
     /// Get a finished game by its ID.
     async fn get_game(&self, game_id: GameId) -> GameResult<CompletedGame>;
+
+    /// Retrieve the configuration for the provided `game_id`.
+    async fn get_game_config(&self, game_id: GameId) -> GameResult<GameConfig>;
 }

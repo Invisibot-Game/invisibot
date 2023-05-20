@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
     clients::{
@@ -27,15 +27,12 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
     pub async fn new(
         client_handler: C,
         persistence_handler: P,
-        game_config: GameConfig,
+        game_id: GameId,
+        player_ids: HashSet<PlayerId>,
     ) -> GameResult<Self> {
-        let mut client_handler = client_handler;
-        let clients = client_handler.accept_clients(game_config.num_players);
+        let game_config = persistence_handler.get_game_config(game_id.clone()).await?;
 
-        let initial_game_state = GameState::new(clients, &game_config.map_dir)?;
-        let game_id = persistence_handler
-            .new_game(initial_game_state.map.clone())
-            .await?;
+        let initial_game_state = GameState::new(player_ids, &game_config.map_dir)?;
 
         Ok(Self {
             game_id,

@@ -1,13 +1,16 @@
 #![forbid(unsafe_code)]
 
+use std::thread;
+
 use api::game::{get_game, new_game};
 use config::Config;
-use invisibot_postgres::db_connection::DBConnection;
+use invisibot_postgres::{db_connection::DBConnection, postgres_handler::PostgresHandler};
 use rocket::{
     fairing::{Fairing, Info, Kind},
     http::Header,
     Request, Response,
 };
+use ws_pool::WsPoolManager;
 
 #[macro_use]
 extern crate rocket;
@@ -21,6 +24,12 @@ async fn rocket() -> _ {
     let config = Config::new().expect("Failed to load config");
 
     let database_connection = DBConnection::new(&config.database_url).await;
+    let ws_pool = WsPoolManager::init(
+        PostgresHandler::new(&database_connection),
+        config.websocket_port,
+    );
+
+    thread::spawn(move || ws_pool.start());
 
     let mut rocket = rocket::build()
         .mount("/api", routes![get_game, new_game])

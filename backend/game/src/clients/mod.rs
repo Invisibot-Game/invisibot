@@ -1,5 +1,5 @@
 use serde::de::DeserializeOwned;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use self::{game_message::GameMessage, player_id::PlayerId};
 
@@ -12,10 +12,6 @@ pub mod round_response;
 
 /// A handler responsible for handling communication between the server and the clients.
 pub trait ClientHandler {
-    /// Accept `num_client` players for a game returning a list of their PlayerIds.
-    /// Note that the returned vector must have length `num_clients` and each of the returned PlayerIds are required to be unique.
-    fn accept_clients(&mut self, num_clients: usize) -> HashSet<PlayerId>;
-
     /// Broadcast the `message` to all clients.
     fn broadcast_message(&mut self, message: GameMessage);
 
