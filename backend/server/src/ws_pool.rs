@@ -1,8 +1,11 @@
 use std::{collections::HashMap, io, net::TcpListener, thread};
 
-use invisibot_game::{clients::game_message::GameMessage, game::Game, persistence::GameId};
+use invisibot_game::{
+    clients::{connect_response::ConnectResponse, game_message::GameMessage},
+    game::Game,
+    persistence::GameId,
+};
 use invisibot_postgres::postgres_handler::PostgresHandler;
-use serde::{Deserialize, Serialize};
 use websocket_api::{WsClient, WsHandler};
 
 pub struct WsPoolManager {
@@ -81,11 +84,6 @@ impl WsPoolManager {
             }
         }
     }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-struct ConnectResponse {
-    game_id: GameId,
 }
 
 async fn play_game(game_id: GameId, players: Vec<WsClient>, pg_handler: PostgresHandler) {
