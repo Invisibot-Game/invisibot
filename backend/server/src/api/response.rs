@@ -31,14 +31,6 @@ impl<T: Serialize + Clone> GameResponse<T> {
         }
     }
 
-    pub fn ok_with(data: T, status: Status, map: HashMap<&'static str, &'static str>) -> Self {
-        Self {
-            status,
-            response_data: ResponseData::Success(data),
-            headers: map,
-        }
-    }
-
     pub fn err(status: Status, msg: String) -> Self {
         Self {
             status,
