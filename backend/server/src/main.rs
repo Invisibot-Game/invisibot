@@ -1,7 +1,5 @@
 #![forbid(unsafe_code)]
 
-use std::thread;
-
 use api::game::{get_game, new_game};
 use config::Config;
 use invisibot_postgres::{db_connection::DBConnection, postgres_handler::PostgresHandler};
@@ -10,6 +8,7 @@ use rocket::{
     http::Header,
     Request, Response,
 };
+use tokio::task;
 use ws_pool::WsPoolManager;
 
 #[macro_use]
@@ -24,12 +23,11 @@ async fn rocket() -> _ {
     let config = Config::new().expect("Failed to load config");
 
     let database_connection = DBConnection::new(&config.database_url).await;
-    let ws_pool = WsPoolManager::init(
-        PostgresHandler::new(&database_connection),
-        config.websocket_port,
-    );
 
-    thread::spawn(move || ws_pool.start());
+    let db_clone = database_connection.clone();
+    let port = config.websocket_port.clone();
+
+    task::spawn(start_ws_pool(db_clone, port));
 
     let mut rocket = rocket::build()
         .mount("/api", routes![get_game, new_game])
@@ -56,4 +54,10 @@ impl Fairing for Cors {
     async fn on_response<'r>(&self, _request: &'r Request<'_>, response: &mut Response<'r>) {
         response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
     }
+}
+
+async fn start_ws_pool(database_connection: DBConnection, port: u32) {
+    let ws_pool = WsPoolManager::init(PostgresHandler::new(&database_connection), port);
+    println!("Starting WS_POOL");
+    ws_pool.start().await
 }

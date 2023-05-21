@@ -11,7 +11,11 @@ use crate::{
 pub async fn set_game_started(conn: &DBConnection, game_id: GameId) -> PostgresResult<()> {
     let mut transaction = conn.new_transaction().await?;
 
-    game_repository::start_game_with_id(&mut transaction, game_id).await
+    game_repository::start_game_with_id(&mut transaction, game_id).await?;
+
+    transaction.commit().await?;
+
+    Ok(())
 }
 
 pub async fn set_game_map(
