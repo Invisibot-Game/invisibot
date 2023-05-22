@@ -1,7 +1,10 @@
 use std::{collections::HashMap, net::TcpListener};
 
 use invisibot_game::{
-    clients::{connect_response::ConnectResponse, game_message::GameMessage},
+    clients::{
+        connect_response::{ClientType, ConnectResponse},
+        game_message::GameMessage,
+    },
     game::Game,
     persistence::GameId,
 };
@@ -57,7 +60,14 @@ impl WsPoolManager {
 
         let (num_players, curr_players) = if let Some(setup) = self.games.get_mut(&game_id) {
             // Add them to an existing game
-            setup.curr_players.push(client);
+            match resp.client_type {
+                ClientType::Player => {
+                    setup.curr_players.push(client);
+                }
+                ClientType::Spectator => {
+                    setup.spectators.push(client);
+                }
+            }
             (setup.max_players.clone() as usize, setup.curr_players.len())
         } else {
             let game = self
@@ -73,15 +83,24 @@ impl WsPoolManager {
                     return;
                 }
 
-                let players = vec![client];
-                let spectators = vec![];
+                let mut players = vec![];
+                let mut spectators = vec![];
+
+                match resp.client_type {
+                    ClientType::Player => {
+                        players.push(client);
+                    }
+                    ClientType::Spectator => {
+                        spectators.push(client);
+                    }
+                }
 
                 self.games.insert(
                     resp.game_id,
                     GameSetup {
                         max_players: game.num_players.clone(),
                         curr_players: players,
-                        spectators,
+                        spectators: spectators,
                     },
                 );
 
