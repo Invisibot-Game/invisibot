@@ -17,13 +17,22 @@ use crate::{
         game_repository, map_repository, map_wall_repository, player_repository, round_repository,
         shot_tile_repository, starting_position_repository,
     },
-    tables::player::Player,
+    tables::{game::Game, player::Player},
 };
+
+pub async fn get_game(conn: &DBConnection, game_id: GameId) -> PostgresResult<Option<Game>> {
+    let mut transaction = conn.new_transaction().await?;
+    let game = game_repository::try_get_game_by_id(&mut transaction, game_id).await?;
+    transaction.commit().await?;
+    Ok(game)
+}
 
 pub async fn get_finished_game(
     conn: &DBConnection,
     game_id: GameId,
 ) -> PostgresResult<CompletedGame> {
+    // TODO: Check if the game is actually finished.
+
     let mut transaction = conn.new_transaction().await?;
 
     let map = map_repository::get_map_by_game_id(&mut transaction, game_id).await?;

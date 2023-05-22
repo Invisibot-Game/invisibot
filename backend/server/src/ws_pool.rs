@@ -3,7 +3,7 @@ use std::{collections::HashMap, net::TcpListener};
 use invisibot_game::{
     clients::{connect_response::ConnectResponse, game_message::GameMessage},
     game::Game,
-    persistence::GameId,
+    persistence::{GameId, PersistenceHandler},
 };
 use invisibot_postgres::postgres_handler::PostgresHandler;
 use tokio::task::{self, yield_now};
@@ -36,45 +36,61 @@ impl WsPoolManager {
     pub async fn start(mut self) {
         println!("Websocket pool starting up");
         loop {
-            let mut client = self.accept_client().await;
+            self.handle_new_client().await;
+            yield_now().await;
+        }
+    }
 
-            client.send_message(GameMessage::ClientHello);
-            let resp = client.receive_message::<ConnectResponse>();
-            let game_id = resp.game_id;
+    async fn handle_new_client(&mut self) {
+        let mut client = self.accept_client().await;
 
-            let (num_players, curr_players) =
-                if let Some((num_players, players)) = self.games.get_mut(&game_id) {
-                    // Add them to an existing game
-                    players.push(client);
-                    (num_players.clone() as usize, players.len())
-                } else {
-                    // TODO: Check if the game has started and if so, don't allow connection.
-                    let num_players = self
-                        .pg_handler
-                        .get_num_players_for_game(game_id)
-                        .await
-                        .expect("Game not found");
+        client.send_message(GameMessage::ClientHello);
+
+        // TODO: Maybe not wait here, maybe we store them in the state and check back later.
+        let resp = client.receive_message::<ConnectResponse>();
+        let game_id = resp.game_id;
+
+        let (num_players, curr_players) =
+            if let Some((num_players, players)) = self.games.get_mut(&game_id) {
+                // Add them to an existing game
+                players.push(client);
+                (num_players.clone() as usize, players.len())
+            } else {
+                // TODO: Check if the game has started and if so, don't allow connection.
+                let game = self
+                    .pg_handler
+                    .get_game(game_id.clone())
+                    .await
+                    .expect("Game not found");
+
+                if let Some(game) = game {
+                    if game.started_at.is_some() {
+                        client.send_message(GameMessage::GameStarted);
+                        client.close();
+                        return;
+                    }
 
                     self.games
-                        .insert(resp.game_id, (num_players.clone(), vec![client]));
+                        .insert(resp.game_id, (game.num_players.clone(), vec![client]));
 
-                    (num_players as usize, 1)
-                };
+                    (game.num_players as usize, 1)
+                } else {
+                    // Inform the client that there is no such game.
+                    client.send_message(GameMessage::GameNotFound(game_id));
+                    client.close();
+                    return;
+                }
+            };
 
-            if curr_players == num_players {
-                // Start game
-                // Mark the game as started somehow (in DB presumably)
-                println!("All players are in, starting game {game_id}");
-                let (_, players) = self.games.remove(&game_id).unwrap(); // Should always exist here
-                self.pg_handler
-                    .set_game_started(game_id.clone())
-                    .await
-                    .expect("Failed to set game as started");
-                let game_pg_handler = self.pg_handler.clone();
-                task::spawn(play_game(game_id, players, game_pg_handler));
-            }
-
-            yield_now().await;
+        if curr_players == num_players {
+            println!("All players are in, starting game {game_id}");
+            let (_, players) = self.games.remove(&game_id).unwrap(); // Should always exist here
+            self.pg_handler
+                .set_game_started(game_id.clone())
+                .await
+                .expect("Failed to set game as started");
+            let game_pg_handler = self.pg_handler.clone();
+            task::spawn(play_game(game_id, players, game_pg_handler));
         }
     }
 

@@ -31,7 +31,6 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
         player_ids: HashSet<PlayerId>,
     ) -> GameResult<Self> {
         let game_config = persistence_handler.get_game_config(game_id.clone()).await?;
-        println!("LOADED GAME_CONFIG: {game_config:?}");
 
         let initial_game_state = GameState::new(player_ids, &game_config.map_dir)?;
 
@@ -65,7 +64,7 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
             let (new_state, dead_players) = state.run_round(actions)?;
             dead_players.into_iter().for_each(|id: u32| {
                 self.client_handler
-                    .broadcast_message(GameMessage::player_killed(id));
+                    .broadcast_message(GameMessage::PlayerKilled(id));
                 self.client_handler.disconnect_player(&id);
             });
 
@@ -107,7 +106,7 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
         }
 
         self.client_handler
-            .broadcast_message(GameMessage::goodbye("Bye".to_string()));
+            .broadcast_message(GameMessage::ClientGoodbye("Bye".to_string()));
         self.client_handler.close();
         self.game_rounds = states;
 

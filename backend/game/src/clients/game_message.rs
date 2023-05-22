@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::{game_logic::game_state::GameState, utils::coordinate::Coordinate};
+use crate::{
+    game_logic::game_state::GameState, persistence::GameId, utils::coordinate::Coordinate,
+};
 
 use super::player_id::PlayerId;
 
@@ -17,8 +19,12 @@ pub enum GameMessage {
     ClientGoodbye(String),
     /// A player was killed.
     PlayerKilled(PlayerId),
-    /// A player won
+    /// A player won.
     PlayerWon(PlayerId),
+    /// The game has already started.
+    GameStarted,
+    /// No game with the provided ID could be found.
+    GameNotFound(GameId),
 }
 
 impl GameMessage {
@@ -32,21 +38,6 @@ impl GameMessage {
         Self::GameRound(GameRound::new(&game_state, &player_id))
     }
 
-    /// Creates an instance of the ClientGoodbye message.
-    pub fn goodbye(message: String) -> Self {
-        Self::ClientGoodbye(message)
-    }
-
-    /// Sent between rounds if a player was killed last round.
-    pub fn player_killed(player: PlayerId) -> Self {
-        Self::PlayerKilled(player)
-    }
-
-    /// Sent to the player who won to inform them of that fact.
-    pub fn player_won(player: PlayerId) -> Self {
-        Self::PlayerWon(player)
-    }
-
     /// Returns the message type in a human readable format.
     pub fn message_type(&self) -> String {
         match self {
@@ -55,6 +46,8 @@ impl GameMessage {
             Self::ClientGoodbye(_) => "Client Goodbye".to_string(),
             Self::PlayerKilled(id) => format!("Player {id} was killed"),
             Self::PlayerWon(id) => format!("Player {id} won the game!"),
+            Self::GameStarted => "The game has already started".to_string(),
+            Self::GameNotFound(id) => format!("No game with id {id} could be found"),
         }
     }
 }

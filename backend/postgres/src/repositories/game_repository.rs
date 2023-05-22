@@ -43,6 +43,23 @@ WHERE id = $1
     .await?)
 }
 
+pub async fn try_get_game_by_id(
+    transaction: &mut Transaction<'_, DB>,
+    game_id: GameId,
+) -> PostgresResult<Option<Game>> {
+    Ok(sqlx::query_as!(
+        Game,
+        r#"
+SELECT id, created_at, started_at, num_players, max_num_rounds, map_dir
+FROM game
+WHERE id = $1
+        "#,
+        game_id
+    )
+    .fetch_optional(transaction)
+    .await?)
+}
+
 pub async fn start_game_with_id(
     transaction: &mut Transaction<'_, DB>,
     game_id: GameId,
