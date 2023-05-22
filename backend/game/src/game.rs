@@ -58,6 +58,8 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
                 self.client_handler
                     .send_message(id, GameMessage::game_round(state.clone(), id.clone()));
             });
+            self.client_handler
+                .broadcast_spectators(GameMessage::GameRoundSpectators(state.clone()));
 
             let actions: HashMap<PlayerId, RoundResponse> = self.client_handler.receive_messages();
 

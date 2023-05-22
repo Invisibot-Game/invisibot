@@ -12,7 +12,13 @@ use websocket_api::{WsClient, WsHandler};
 pub struct WsPoolManager {
     pg_handler: PostgresHandler,
     server: TcpListener,
-    games: HashMap<GameId, (u32, Vec<WsClient>)>,
+    games: HashMap<GameId, GameSetup>,
+}
+
+struct GameSetup {
+    max_players: u32,
+    curr_players: Vec<WsClient>,
+    spectators: Vec<WsClient>,
 }
 
 impl WsPoolManager {
@@ -49,46 +55,54 @@ impl WsPoolManager {
         let resp = client.receive_message::<ConnectResponse>();
         let game_id = resp.game_id;
 
-        let (num_players, curr_players) =
-            if let Some((num_players, players)) = self.games.get_mut(&game_id) {
-                // Add them to an existing game
-                players.push(client);
-                (num_players.clone() as usize, players.len())
-            } else {
-                let game = self
-                    .pg_handler
-                    .get_game(game_id.clone())
-                    .await
-                    .expect("Game not found");
+        let (num_players, curr_players) = if let Some(setup) = self.games.get_mut(&game_id) {
+            // Add them to an existing game
+            setup.curr_players.push(client);
+            (setup.max_players.clone() as usize, setup.curr_players.len())
+        } else {
+            let game = self
+                .pg_handler
+                .get_game(game_id.clone())
+                .await
+                .expect("Game not found");
 
-                if let Some(game) = game {
-                    if game.started_at.is_some() {
-                        client.send_message(GameMessage::GameStarted);
-                        client.close();
-                        return;
-                    }
-
-                    self.games
-                        .insert(resp.game_id, (game.num_players.clone(), vec![client]));
-
-                    (game.num_players as usize, 1)
-                } else {
-                    // Inform the client that there is no such game.
-                    client.send_message(GameMessage::GameNotFound(game_id));
+            if let Some(game) = game {
+                if game.started_at.is_some() {
+                    client.send_message(GameMessage::GameStarted);
                     client.close();
                     return;
                 }
-            };
+
+                let players = vec![client];
+                let spectators = vec![];
+
+                self.games.insert(
+                    resp.game_id,
+                    GameSetup {
+                        max_players: game.num_players.clone(),
+                        curr_players: players,
+                        spectators,
+                    },
+                );
+
+                (game.num_players as usize, 1)
+            } else {
+                // Inform the client that there is no such game.
+                client.send_message(GameMessage::GameNotFound(game_id));
+                client.close();
+                return;
+            }
+        };
 
         if curr_players == num_players {
             println!("All players are in, starting game {game_id}");
-            let (_, players) = self.games.remove(&game_id).unwrap(); // Should always exist here
+            let setup = self.games.remove(&game_id).unwrap(); // Should always exist here
             self.pg_handler
                 .set_game_started(game_id.clone())
                 .await
                 .expect("Failed to set game as started");
             let game_pg_handler = self.pg_handler.clone();
-            task::spawn(play_game(game_id, players, game_pg_handler));
+            task::spawn(play_game(game_id, setup, game_pg_handler));
         }
     }
 
@@ -104,9 +118,12 @@ impl WsPoolManager {
     }
 }
 
-async fn play_game(game_id: GameId, players: Vec<WsClient>, pg_handler: PostgresHandler) {
-    println!("Starting game {game_id} with {} players", players.len());
-    let ws_handler = WsHandler::new_with_players(players);
+async fn play_game(game_id: GameId, setup: GameSetup, pg_handler: PostgresHandler) {
+    println!(
+        "Starting game {game_id} with {} players",
+        setup.curr_players.len()
+    );
+    let ws_handler = WsHandler::new_with_players(setup.curr_players, setup.spectators);
     let player_ids = ws_handler.get_player_ids();
     let mut game = Game::new(ws_handler, pg_handler, game_id, player_ids)
         .await

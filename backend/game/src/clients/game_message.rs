@@ -15,6 +15,8 @@ pub enum GameMessage {
     ClientHello,
     /// A message sent on each game round requesting moves from the clients.
     GameRound(GameRound),
+    /// A message sent on each game round to all spectators.
+    GameRoundSpectators(GameState),
     /// A message sent as the game is over before the server closes the connection.
     ClientGoodbye(String),
     /// A player was killed.
@@ -43,6 +45,7 @@ impl GameMessage {
         match self {
             Self::ClientHello => "Client Hello".to_string(),
             Self::GameRound(_) => "Game Round".to_string(),
+            Self::GameRoundSpectators(_) => "Game Round Spectator".to_string(),
             Self::ClientGoodbye(_) => "Client Goodbye".to_string(),
             Self::PlayerKilled(id) => format!("Player {id} was killed"),
             Self::PlayerWon(id) => format!("Player {id} won the game!"),

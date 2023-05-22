@@ -20,7 +20,7 @@ pub trait ClientHandler {
     /// Broadcast the `message` string to all clients.
     fn broadcast_text(&mut self, message: String);
 
-    /// Send the `message` to the player with id `player_id`
+    /// Send the `message` to the player with id `player_id`.
     fn send_message(&mut self, player_id: &PlayerId, message: GameMessage);
 
     /// Receive messages of type `ResponseMessage` from all connected clients.
@@ -30,6 +30,9 @@ pub trait ClientHandler {
 
     /// Disconnect a player, typically happens when they die.
     fn disconnect_player(&mut self, player_id: &PlayerId);
+
+    /// Broadcast a message but only to Spectator clients.
+    fn broadcast_spectators(&mut self, message: GameMessage);
 
     /// Close connections (if applicable) to all clients.
     /// Indicates that there will be no more messages from the server.

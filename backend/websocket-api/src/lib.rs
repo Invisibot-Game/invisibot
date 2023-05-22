@@ -15,6 +15,7 @@ use tungstenite::{Message, WebSocket};
 #[derive(Debug)]
 pub struct WsHandler {
     clients: HashMap<PlayerId, WsClient>,
+    spectators: Vec<WsClient>,
 }
 
 impl ClientHandler for WsHandler {
@@ -61,7 +62,15 @@ impl ClientHandler for WsHandler {
     fn close(&mut self) {
         self.clients
             .iter_mut()
-            .for_each(|(_, client)| client.close())
+            .for_each(|(_, client)| client.close());
+
+        self.spectators.iter_mut().for_each(|client| client.close());
+    }
+
+    fn broadcast_spectators(&mut self, message: GameMessage) {
+        self.spectators
+            .iter_mut()
+            .for_each(|client| client.send_message(message.clone()));
     }
 }
 
@@ -69,6 +78,7 @@ impl WsHandler {
     pub fn new() -> Self {
         Self {
             clients: HashMap::new(),
+            spectators: Vec::new(),
         }
     }
 
@@ -77,13 +87,14 @@ impl WsHandler {
         self.clients.insert(player_id, ws);
     }
 
-    pub fn new_with_players(players: Vec<WsClient>) -> Self {
+    pub fn new_with_players(players: Vec<WsClient>, spectators: Vec<WsClient>) -> Self {
         Self {
             clients: players
                 .into_iter()
                 .enumerate()
                 .map(|(id, client)| (id as PlayerId, client))
                 .collect(),
+            spectators,
         }
     }
 
