@@ -31,18 +31,3 @@ services:
     volumes:
       - ./backend:/app
       - /app/target
-
-
-  frontend:
-    build:
-      context: invisibot-frontend
-      dockerfile: dev.Dockerfile
-    environment:
-      NEXT_PUBLIC_BASE_URL: http://backend:8000/api
-    ports:
-      - ${FRONTEND_PORT}:3000
-    volumes:
-      - ./invisibot-frontend:/app
-      - /app/node_modules
-    extra_hosts:
-      host.docker.internal: host-gateway
