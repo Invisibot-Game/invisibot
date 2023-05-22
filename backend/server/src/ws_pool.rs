@@ -3,7 +3,7 @@ use std::{collections::HashMap, net::TcpListener};
 use invisibot_game::{
     clients::{connect_response::ConnectResponse, game_message::GameMessage},
     game::Game,
-    persistence::{GameId, PersistenceHandler},
+    persistence::GameId,
 };
 use invisibot_postgres::postgres_handler::PostgresHandler;
 use tokio::task::{self, yield_now};
@@ -32,7 +32,6 @@ impl WsPoolManager {
         }
     }
 
-    /// Must be run in a new thread!
     pub async fn start(mut self) {
         println!("Websocket pool starting up");
         loop {
@@ -98,8 +97,7 @@ impl WsPoolManager {
         match self.server.accept() {
             Ok((stream, _)) => {
                 println!("Client connecting!");
-                let ws = tungstenite::accept(stream).expect("Failed to initiate websocket");
-                WsClient::new(ws)
+                WsClient::accept(stream)
             }
             Err(e) => panic!("An unexpected error occurred whilst listening for clients, err {e}"),
         }

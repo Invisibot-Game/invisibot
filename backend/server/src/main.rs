@@ -2,10 +2,7 @@
 
 use api::game::{get_game, new_game};
 use config::Config;
-use invisibot_postgres::{
-    db_connection::DBConnection,
-    postgres_handler::{self, PostgresHandler},
-};
+use invisibot_postgres::{db_connection::DBConnection, postgres_handler::PostgresHandler};
 use rocket::{
     fairing::{Fairing, Info, Kind},
     http::Header,

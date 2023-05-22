@@ -6,7 +6,7 @@ use invisibot_game::{
     },
     utils::{coordinate::Coordinate, direction::Direction},
 };
-use invisibot_postgres::{db_connection::DBConnection, postgres_handler::PostgresHandler};
+use invisibot_postgres::postgres_handler::PostgresHandler;
 use rocket::{http::Status, serde::json::Json, State};
 use uuid::Uuid;
 
