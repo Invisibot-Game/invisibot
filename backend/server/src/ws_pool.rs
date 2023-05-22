@@ -1,8 +1,11 @@
-use std::{collections::HashMap, io, net::TcpListener};
+use std::{collections::HashMap, net::TcpListener};
 
-use invisibot_game::{clients::game_message::GameMessage, game::Game, persistence::GameId};
+use invisibot_game::{
+    clients::{connect_response::ConnectResponse, game_message::GameMessage},
+    game::Game,
+    persistence::GameId,
+};
 use invisibot_postgres::postgres_handler::PostgresHandler;
-use serde::{Deserialize, Serialize};
 use tokio::task;
 use websocket_api::{WsClient, WsHandler};
 
@@ -94,11 +97,4 @@ async fn play_game(game_id: GameId, players: Vec<WsClient>, pg_handler: Postgres
         .await
         .expect("Failed to create new game");
     game.run_game().await.expect("Failed to run game");
-}
-
-/// A response expected to be sent when receiving a ClientHello message.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-struct ConnectResponse {
-    /// The id of the game you wish to join.
-    pub game_id: GameId,
 }
