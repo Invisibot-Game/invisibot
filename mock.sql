@@ -1,7 +1,7 @@
 INSERT INTO
-    game (id)
+    game (id, num_players, max_num_rounds, map_dir, started_at, finished_at)
 VALUES
-    ('7e6eee99-0d5d-4419-ba12-372fdf56324f');
+    ('7e6eee99-0d5d-4419-ba12-372fdf56324f', 4, 80, './resources/maps/game_map_2.bmp', '2023-05-17 17:04:33.333666+00', '2023-05-17 17:04:34.112051+00');
 
 INSERT INTO
     map (id, game_id, width, height)
