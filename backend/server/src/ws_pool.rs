@@ -6,7 +6,7 @@ use invisibot_game::{
     persistence::GameId,
 };
 use invisibot_postgres::postgres_handler::PostgresHandler;
-use tokio::task;
+use tokio::task::{self, yield_now};
 use websocket_api::{WsClient, WsHandler};
 
 pub struct WsPoolManager {
@@ -73,6 +73,8 @@ impl WsPoolManager {
                 let game_pg_handler = self.pg_handler.clone();
                 task::spawn(play_game(game_id, players, game_pg_handler));
             }
+
+            yield_now().await;
         }
     }
 
