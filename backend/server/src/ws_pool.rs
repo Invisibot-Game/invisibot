@@ -56,7 +56,6 @@ impl WsPoolManager {
                 players.push(client);
                 (num_players.clone() as usize, players.len())
             } else {
-                // TODO: Check if the game has started and if so, don't allow connection.
                 let game = self
                     .pg_handler
                     .get_game(game_id.clone())
