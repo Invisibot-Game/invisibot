@@ -5,6 +5,7 @@ use invisibot_game::{
     persistence::{completed_game::CompletedGame, GameId, PersistenceHandler},
     utils::{coordinate::Coordinate, game_error::GameResult},
 };
+use sqlx::types::chrono::{DateTime, Utc};
 
 use crate::{
     db_connection::DBConnection,
@@ -51,12 +52,6 @@ impl PersistenceHandler for PostgresHandler {
         // We don't really have anything to do here yet.
         Ok(())
     }
-
-    async fn get_game(&self, game_id: GameId) -> GameResult<CompletedGame> {
-        get_game_service::get_finished_game(&self.connection, game_id)
-            .await
-            .map_err(|e| e.into())
-    }
 }
 
 impl PostgresHandler {
@@ -90,4 +85,28 @@ impl PostgresHandler {
     pub async fn get_num_players_for_game(&self, game_id: GameId) -> PostgresResult<u32> {
         get_game_service::get_game_num_players(&self.connection, game_id).await
     }
+
+    /// Get a finished game.
+    pub async fn get_finished_game(&self, game_id: GameId) -> PostgresResult<CompletedGame> {
+        get_game_service::get_finished_game(&self.connection, game_id).await
+    }
+
+    /// Retrieve a game by its ID or None if it doesn't exist.
+    pub async fn get_game(&self, game_id: GameId) -> PostgresResult<Option<Game>> {
+        let game = get_game_service::get_game(&self.connection, game_id).await?;
+
+        Ok(game.map(|g| Game {
+            num_players: g.num_players as u32,
+            started_at: g.started_at,
+        }))
+    }
+}
+
+/// A game.
+#[derive(Debug, Clone)]
+pub struct Game {
+    /// The number of players required for this game.
+    pub num_players: u32,
+    /// The time at which the game started or none if it has not yet started.
+    pub started_at: Option<DateTime<Utc>>,
 }

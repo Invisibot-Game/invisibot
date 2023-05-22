@@ -40,7 +40,7 @@ pub struct PlayerResponse {
 
 #[get("/game/<game_id>")]
 pub async fn get_game(
-    db_connection: &State<DBConnection>,
+    pg_handler: &State<PostgresHandler>,
     game_id: String,
 ) -> GameResponse<RoundsResponse> {
     let game_id = match Uuid::parse_str(&game_id) {
@@ -51,7 +51,7 @@ pub async fn get_game(
         }
     };
 
-    let completed_game = match invisibot_postgres::get_game(db_connection, game_id).await {
+    let completed_game = match pg_handler.get_finished_game(game_id).await {
         Ok(g) => g,
         Err(e) => {
             println!("Failed to retrieve game, err: {e}");
@@ -83,12 +83,9 @@ pub struct NewGameResponse {
 #[post("/game", data = "<request>")]
 pub async fn new_game(
     request: Json<NewGameRequest>,
-    db_connection: &State<DBConnection>,
+    pg_handler: &State<PostgresHandler>,
     config: &State<Config>,
 ) -> GameResponse<NewGameResponse> {
-    // TODO: Weird to create a new postgres handler every request, figure that out.
-    let pg_handler = PostgresHandler::new(&db_connection);
-
     let game_id = match pg_handler
         .new_game(
             request.num_players as u32,

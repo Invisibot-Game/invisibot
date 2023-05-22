@@ -7,8 +7,6 @@ use crate::{
     utils::{coordinate::Coordinate, game_error::GameResult},
 };
 
-use self::completed_game::CompletedGame;
-
 #[doc = "inline"]
 pub mod completed_game;
 
@@ -32,9 +30,6 @@ pub trait PersistenceHandler {
 
     /// Store that the game is finished.
     async fn game_done(&self, game_id: GameId) -> GameResult<()>;
-
-    /// Get a finished game by its ID.
-    async fn get_game(&self, game_id: GameId) -> GameResult<CompletedGame>;
 
     /// Retrieve the configuration for the provided `game_id`.
     async fn get_game_config(&self, game_id: GameId) -> GameResult<GameConfig>;

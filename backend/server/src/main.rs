@@ -2,7 +2,10 @@
 
 use api::game::{get_game, new_game};
 use config::Config;
-use invisibot_postgres::{db_connection::DBConnection, postgres_handler::PostgresHandler};
+use invisibot_postgres::{
+    db_connection::DBConnection,
+    postgres_handler::{self, PostgresHandler},
+};
 use rocket::{
     fairing::{Fairing, Info, Kind},
     http::Header,
@@ -29,9 +32,11 @@ async fn rocket() -> _ {
 
     task::spawn(start_ws_pool(db_clone, port));
 
+    let postgres_handler = PostgresHandler::new(&database_connection);
+
     let mut rocket = rocket::build()
         .mount("/api", routes![get_game, new_game])
-        .manage(database_connection);
+        .manage(postgres_handler);
 
     if config.development_mode {
         rocket = rocket.attach(Cors);
