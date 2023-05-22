@@ -38,7 +38,7 @@ pub struct PlayerResponse {
     visible: bool,
 }
 
-#[get("/game/<game_id>")]
+#[get("/games/<game_id>")]
 pub async fn get_game(
     pg_handler: &State<PostgresHandler>,
     game_id: String,
@@ -80,7 +80,7 @@ pub struct NewGameResponse {
     game_id: GameId,
 }
 
-#[post("/game", data = "<request>")]
+#[post("/games", data = "<request>")]
 pub async fn new_game(
     request: Json<NewGameRequest>,
     pg_handler: &State<PostgresHandler>,
