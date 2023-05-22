@@ -7,6 +7,8 @@
 //!
 
 pub use async_trait;
+use persistence::GameId;
+use serde::{Deserialize, Serialize};
 
 /// Types & logic intended for communication with clients.
 pub mod clients;
@@ -22,3 +24,10 @@ pub mod persistence;
 pub mod utils;
 
 mod game_logic;
+
+/// A response expected to be sent when receiving a ClientHello message.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ConnectResponse {
+    /// The id of the game you wish to join.
+    pub game_id: GameId,
+}
