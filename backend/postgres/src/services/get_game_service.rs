@@ -27,6 +27,13 @@ pub async fn get_game(conn: &DBConnection, game_id: GameId) -> PostgresResult<Op
     Ok(game)
 }
 
+pub async fn get_games(conn: &DBConnection) -> PostgresResult<Vec<Game>> {
+    let mut transaction = conn.new_transaction().await?;
+    let games = game_repository::get_all_games(&mut transaction).await?;
+    transaction.commit().await?;
+    Ok(games)
+}
+
 pub async fn get_finished_game(
     conn: &DBConnection,
     game_id: GameId,

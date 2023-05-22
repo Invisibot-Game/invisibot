@@ -96,15 +96,31 @@ impl PostgresHandler {
         let game = get_game_service::get_game(&self.connection, game_id).await?;
 
         Ok(game.map(|g| Game {
+            game_id: g.id,
             num_players: g.num_players as u32,
             started_at: g.started_at,
         }))
+    }
+
+    /// Retrieve all available games.
+    pub async fn get_all_games(&self) -> PostgresResult<Vec<Game>> {
+        let games = get_game_service::get_games(&self.connection).await?;
+        Ok(games
+            .into_iter()
+            .map(|g| Game {
+                game_id: g.id,
+                num_players: g.num_players as u32,
+                started_at: g.started_at,
+            })
+            .collect())
     }
 }
 
 /// A game.
 #[derive(Debug, Clone)]
 pub struct Game {
+    /// The id of the game
+    pub game_id: GameId,
     /// The number of players required for this game.
     pub num_players: u32,
     /// The time at which the game started or none if it has not yet started.

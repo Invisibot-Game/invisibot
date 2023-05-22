@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use api::games::{get_game, new_game};
+use api::games::{get_game, get_games, new_game};
 use config::Config;
 use invisibot_postgres::{db_connection::DBConnection, postgres_handler::PostgresHandler};
 use rocket::{
@@ -32,7 +32,7 @@ async fn rocket() -> _ {
     let postgres_handler = PostgresHandler::new(&database_connection);
 
     let mut rocket = rocket::build()
-        .mount("/api", routes![get_game, new_game])
+        .mount("/api", routes![get_game, new_game, get_games])
         .manage(postgres_handler);
 
     if config.development_mode {

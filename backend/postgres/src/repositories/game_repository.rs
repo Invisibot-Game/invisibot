@@ -60,6 +60,18 @@ WHERE id = $1
     .await?)
 }
 
+pub async fn get_all_games(transaction: &mut Transaction<'_, DB>) -> PostgresResult<Vec<Game>> {
+    Ok(sqlx::query_as!(
+        Game,
+        r#"
+SELECT id, created_at, started_at, num_players, max_num_rounds, map_dir
+FROM game
+        "#
+    )
+    .fetch_all(transaction)
+    .await?)
+}
+
 pub async fn start_game_with_id(
     transaction: &mut Transaction<'_, DB>,
     game_id: GameId,

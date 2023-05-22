@@ -14,6 +14,47 @@ use crate::{api::response::GameResponse, config::Config};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct GamesResponse {
+    game_id: GameId,
+    game_status: GameStatus,
+    num_players: u32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum GameStatus {
+    Running,
+    WaitingForPlayers,
+}
+
+#[get("/games")]
+pub async fn get_games(pg_handler: &State<PostgresHandler>) -> GameResponse<Vec<GamesResponse>> {
+    let games = match pg_handler.get_all_games().await {
+        Ok(games) => games,
+        Err(e) => {
+            error!("Failed to get games, err: {e}");
+            return GameResponse::internal_err();
+        }
+    };
+
+    let games = games
+        .into_iter()
+        .map(|g| GamesResponse {
+            game_id: g.game_id,
+            game_status: if g.started_at.is_some() {
+                GameStatus::Running
+            } else {
+                GameStatus::WaitingForPlayers
+            },
+            num_players: g.num_players,
+        })
+        .collect();
+
+    GameResponse::ok(games)
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RoundsResponse {
     rounds: Vec<RoundResponse>,
 }
