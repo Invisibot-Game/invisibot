@@ -98,8 +98,9 @@ pub struct WsClient {
 }
 
 impl WsClient {
-    pub fn new(conn: WebSocket<TcpStream>) -> Self {
-        Self { conn }
+    pub fn accept(stream: TcpStream) -> Self {
+        let ws = tungstenite::accept(stream).expect("Failed to initiate websocket");
+        Self { conn: ws }
     }
 
     pub fn send_message(&mut self, message: GameMessage) {
