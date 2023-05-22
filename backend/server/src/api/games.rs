@@ -25,6 +25,7 @@ pub struct GamesResponse {
 pub enum GameStatus {
     Running,
     WaitingForPlayers,
+    Done,
 }
 
 #[get("/games")]
@@ -42,7 +43,11 @@ pub async fn get_games(pg_handler: &State<PostgresHandler>) -> GameResponse<Vec<
         .map(|g| GamesResponse {
             game_id: g.game_id,
             game_status: if g.started_at.is_some() {
-                GameStatus::Running
+                if g.finished_at.is_some() {
+                    GameStatus::Done
+                } else {
+                    GameStatus::Running
+                }
             } else {
                 GameStatus::WaitingForPlayers
             },

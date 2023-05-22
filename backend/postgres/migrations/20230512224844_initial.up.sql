@@ -6,6 +6,7 @@ CREATE TABLE game (
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     started_at TIMESTAMPTZ DEFAULT NULL,
+    finished_at TIMESTAMPTZ DEFAULT NULL,
 
     num_players INT NOT NULL,
     max_num_rounds INT NOT NULL,

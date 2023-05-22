@@ -49,8 +49,9 @@ impl PersistenceHandler for PostgresHandler {
     }
 
     async fn game_done(&self, game_id: GameId) -> GameResult<()> {
-        // We don't really have anything to do here yet.
-        Ok(())
+        update_game_service::set_game_finished(&self.connection, game_id)
+            .await
+            .map_err(|e| e.into())
     }
 }
 
@@ -99,6 +100,7 @@ impl PostgresHandler {
             game_id: g.id,
             num_players: g.num_players as u32,
             started_at: g.started_at,
+            finished_at: g.finished_at,
         }))
     }
 
@@ -111,6 +113,7 @@ impl PostgresHandler {
                 game_id: g.id,
                 num_players: g.num_players as u32,
                 started_at: g.started_at,
+                finished_at: g.finished_at,
             })
             .collect())
     }
@@ -125,4 +128,6 @@ pub struct Game {
     pub num_players: u32,
     /// The time at which the game started or none if it has not yet started.
     pub started_at: Option<DateTime<Utc>>,
+    /// The time at which the game was finished or none if it has not yet finished.
+    pub finished_at: Option<DateTime<Utc>>,
 }
