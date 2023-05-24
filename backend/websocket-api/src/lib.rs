@@ -6,7 +6,9 @@ use std::{
     net::TcpStream,
 };
 
-use invisibot_game::clients::{game_message::GameMessage, player_id::PlayerId, ClientHandler};
+use invisibot_client_api::game_message::GameMessage;
+use invisibot_common::player_id::PlayerId;
+use invisibot_game::client_handler::ClientHandler;
 #[doc(hidden)]
 use serde::de::DeserializeOwned;
 #[doc(hidden)]

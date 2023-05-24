@@ -1,4 +1,4 @@
-use invisibot_game::persistence::GameId;
+use invisibot_common::GameId;
 use sqlx::Transaction;
 
 use crate::{postgres_error::PostgresResult, tables::game::Game};

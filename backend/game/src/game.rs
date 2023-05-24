@@ -1,15 +1,14 @@
 use std::collections::{HashMap, HashSet};
 
+use invisibot_client_api::{
+    game_message::{GameMessage, GameRound, SpectatorRound},
+    round_response::RoundResponse,
+};
+use invisibot_common::{game_error::GameResult, player_id::PlayerId, GameId};
+
 use crate::{
-    clients::{
-        game_message::GameMessage, player_id::PlayerId, round_response::RoundResponse,
-        ClientHandler,
-    },
-    game_config::GameConfig,
-    game_logic::game_state::GameState,
-    game_map::player::Player,
-    persistence::{GameId, PersistenceHandler},
-    utils::game_error::GameResult,
+    client_handler::ClientHandler, game_config::GameConfig, game_logic::game_state::GameState,
+    game_map::player::Player, persistence::PersistenceHandler,
 };
 
 /// A particular game.
@@ -55,11 +54,34 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
 
         for round_number in 0..(self.config.num_rounds - 1) {
             state.players.iter().for_each(|(id, _)| {
-                self.client_handler
-                    .send_message(id, GameMessage::game_round(state.clone(), id.clone()));
+                self.client_handler.send_message(
+                    id,
+                    GameMessage::GameRound(GameRound::new(
+                        state.map.width,
+                        state.map.height,
+                        state.map.get_wall_coords(),
+                        state
+                            .players
+                            .iter()
+                            .filter(|&(id, p)| id == id || p.is_visible())
+                            .map(|(id, p)| (id.clone(), p.get_pos().clone()))
+                            .collect(),
+                        id.clone(),
+                    )),
+                );
             });
             self.client_handler
-                .broadcast_spectators(GameMessage::GameRoundSpectators(state.clone()));
+                .broadcast_spectators(GameMessage::GameRoundSpectators(SpectatorRound::new(
+                    state.map.width,
+                    state.map.height,
+                    state.map.get_wall_coords(),
+                    state
+                        .players
+                        .iter()
+                        .filter(|&(id, p)| id == id || p.is_visible())
+                        .map(|(id, p)| (id.clone(), p.get_pos().clone()))
+                        .collect(),
+                )));
 
             let actions: HashMap<PlayerId, RoundResponse> = self.client_handler.receive_messages();
 

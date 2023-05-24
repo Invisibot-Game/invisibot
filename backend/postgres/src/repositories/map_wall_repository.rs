@@ -1,4 +1,4 @@
-use invisibot_game::utils::coordinate::Coordinate;
+use invisibot_common::coordinate::Coordinate;
 use sqlx::{types::Uuid, Transaction};
 
 use crate::{postgres_error::PostgresResult, tables::map_wall::MapWall};

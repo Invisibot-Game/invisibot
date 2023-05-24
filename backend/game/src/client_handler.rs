@@ -1,16 +1,7 @@
+use invisibot_client_api::game_message::GameMessage;
+use invisibot_common::player_id::PlayerId;
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
-
-use self::{game_message::GameMessage, player_id::PlayerId};
-
-#[doc = "inline"]
-pub mod connect_response;
-#[doc = "inline"]
-pub mod game_message;
-#[doc = "inline"]
-pub mod player_id;
-#[doc = "inline"]
-pub mod round_response;
 
 /// A handler responsible for handling communication between the server and the clients.
 pub trait ClientHandler {

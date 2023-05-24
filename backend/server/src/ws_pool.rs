@@ -1,16 +1,14 @@
 use std::{collections::HashMap, net::TcpListener};
 
-use invisibot_game::{
-    clients::{
-        connect_response::{ClientType, ConnectResponse},
-        game_message::GameMessage,
-    },
-    game::Game,
-    persistence::GameId,
+use invisibot_client_api::{
+    connect_response::{ClientType, ConnectResponse},
+    game_message::GameMessage,
 };
+use invisibot_common::GameId;
+use invisibot_game::game::Game;
 use invisibot_postgres::postgres_handler::PostgresHandler;
+use invisibot_websocket_api::{WsClient, WsHandler};
 use tokio::task::{self, yield_now};
-use websocket_api::{WsClient, WsHandler};
 
 pub struct WsPoolManager {
     pg_handler: PostgresHandler,

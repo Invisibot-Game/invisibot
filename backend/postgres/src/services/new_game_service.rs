@@ -1,4 +1,4 @@
-use invisibot_game::persistence::GameId;
+use invisibot_common::GameId;
 
 use crate::{
     db_connection::DBConnection, postgres_error::PostgresResult, repositories::game_repository,

@@ -1,10 +1,6 @@
-use crate::{
-    clients::player_id::PlayerId,
-    game_map::game_map::GameMap,
-    utils::{coordinate::Coordinate, direction::Direction},
-};
+use invisibot_common::{coordinate::Coordinate, direction::Direction, player_id::PlayerId, GameId};
 
-use super::GameId;
+use crate::game_map::game_map::GameMap;
 
 /// Represents a completed game.
 pub struct CompletedGame {

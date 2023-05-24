@@ -1,4 +1,4 @@
-use invisibot_game::utils::game_error::GameError;
+use invisibot_common::game_error::GameError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum PostgresError {

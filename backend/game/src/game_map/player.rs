@@ -1,9 +1,5 @@
+use invisibot_common::{coordinate::Coordinate, direction::Direction, player_id::PlayerId};
 use serde::{Deserialize, Serialize};
-
-use crate::{
-    clients::player_id::PlayerId,
-    utils::{coordinate::Coordinate, direction::Direction},
-};
 
 /// A player in the game.
 #[derive(Debug, Clone, Serialize, Deserialize)]

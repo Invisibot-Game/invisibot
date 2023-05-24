@@ -1,17 +1,13 @@
 use async_trait::async_trait;
-use uuid::Uuid;
+use invisibot_common::{coordinate::Coordinate, game_error::GameResult, GameId};
 
 use crate::{
     game_config::GameConfig,
     game_map::{game_map::GameMap, player::Player},
-    utils::{coordinate::Coordinate, game_error::GameResult},
 };
 
 #[doc = "inline"]
 pub mod completed_game;
-
-/// A unique identifier for a game.
-pub type GameId = Uuid;
 
 /// A handler that is capable of storing games and retrieving them for later replay.
 #[async_trait]

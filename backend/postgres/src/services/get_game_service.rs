@@ -1,15 +1,3 @@
-use invisibot_game::{
-    clients::player_id::PlayerId,
-    coord,
-    game_config::GameConfig,
-    game_map::game_map::GameMap,
-    persistence::{
-        completed_game::{CompletedGame, GameRound, RoundPlayer},
-        GameId,
-    },
-    utils::{coordinate::Coordinate, direction::Direction},
-};
-
 use crate::{
     db_connection::DBConnection,
     postgres_error::PostgresResult,
@@ -18,6 +6,13 @@ use crate::{
         shot_tile_repository, starting_position_repository,
     },
     tables::{game::Game, player::Player},
+};
+use invisibot_common::coordinate::Coordinate;
+use invisibot_common::{coord, direction::Direction, player_id::PlayerId, GameId};
+use invisibot_game::{
+    game_config::GameConfig,
+    game_map::game_map::GameMap,
+    persistence::completed_game::{CompletedGame, GameRound, RoundPlayer},
 };
 
 pub async fn get_game(conn: &DBConnection, game_id: GameId) -> PostgresResult<Option<Game>> {

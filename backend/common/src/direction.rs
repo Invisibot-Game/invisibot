@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
-use super::game_error::GameError;
+use crate::game_error::GameError;
 
 /// A direction
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]

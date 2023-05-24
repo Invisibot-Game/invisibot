@@ -1,8 +1,4 @@
-use invisibot_game::{
-    clients::player_id::PlayerId,
-    persistence::GameId,
-    utils::{coordinate::Coordinate, direction::Direction},
-};
+use invisibot_common::{coordinate::Coordinate, direction::Direction, player_id::PlayerId, GameId};
 use sqlx::Transaction;
 
 use crate::{postgres_error::PostgresResult, tables::player::Player};

@@ -1,4 +1,4 @@
-use invisibot_game::{persistence::GameId, utils::coordinate::Coordinate};
+use invisibot_common::{coordinate::Coordinate, GameId};
 use sqlx::Transaction;
 
 use crate::{postgres_error::PostgresResult, tables::shot_tile::ShotTile};

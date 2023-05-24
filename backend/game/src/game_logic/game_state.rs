@@ -3,18 +3,17 @@ use std::{
     path::Path,
 };
 
+use invisibot_client_api::round_response::RoundResponse;
+use invisibot_common::{
+    coordinate::Coordinate,
+    direction::Direction,
+    game_error::{GameError, GameResult},
+    player_id::PlayerId,
+};
 use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    clients::{player_id::PlayerId, round_response::RoundResponse},
-    game_map::{game_map::GameMap, player::Player},
-    utils::{
-        coordinate::Coordinate,
-        direction::Direction,
-        game_error::{GameError, GameResult},
-    },
-};
+use crate::game_map::{game_map::GameMap, player::Player};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameState {

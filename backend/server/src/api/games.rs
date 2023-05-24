@@ -1,11 +1,6 @@
 use ::serde::{Deserialize, Serialize};
-use invisibot_game::{
-    persistence::{
-        completed_game::{CompletedGame, RoundPlayer},
-        GameId,
-    },
-    utils::{coordinate::Coordinate, direction::Direction},
-};
+use invisibot_common::{coordinate::Coordinate, direction::Direction, GameId};
+use invisibot_game::persistence::completed_game::{CompletedGame, RoundPlayer};
 use invisibot_postgres::postgres_handler::PostgresHandler;
 use rocket::{http::Status, serde::json::Json, State};
 use uuid::Uuid;

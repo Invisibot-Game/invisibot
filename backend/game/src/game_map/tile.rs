@@ -1,6 +1,5 @@
+use invisibot_common::coordinate::Coordinate;
 use serde::{Deserialize, Serialize};
-
-use crate::utils::coordinate::Coordinate;
 
 use super::tile_type::TileType;
 

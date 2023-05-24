@@ -59,8 +59,8 @@ impl Display for Coordinate {
 }
 
 #[cfg(test)]
-mod diplay_tests {
-    use crate::utils::coordinate::Coordinate;
+mod display_tests {
+    use crate::coordinate::Coordinate;
 
     #[test]
     fn coordinate_displays_correctly() {
@@ -71,7 +71,7 @@ mod diplay_tests {
 
 #[cfg(test)]
 mod translate_tests {
-    use crate::utils::{coordinate::Coordinate, direction::Direction};
+    use crate::direction::Direction;
 
     #[test]
     fn going_right_returns_right_tile_neighbour() {
@@ -100,7 +100,7 @@ mod translate_tests {
 
 #[cfg(test)]
 mod dir_between_tests {
-    use crate::utils::{coordinate::Coordinate, direction::Direction};
+    use crate::{coordinate::Coordinate, direction::Direction};
 
     #[test]
     fn going_one_step_down_returns_down() {

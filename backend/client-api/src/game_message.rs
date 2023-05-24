@@ -1,11 +1,9 @@
+use invisibot_common::{coordinate::Coordinate, player_id::PlayerId, GameId};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::{
-    game_logic::game_state::GameState, persistence::GameId, utils::coordinate::Coordinate,
-};
-
-use super::player_id::PlayerId;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct GameState {}
 
 /// Messages sent from the server to the clients
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -16,7 +14,7 @@ pub enum GameMessage {
     /// A message sent on each game round requesting moves from the clients.
     GameRound(GameRound),
     /// A message sent on each game round to all spectators.
-    GameRoundSpectators(GameState),
+    GameRoundSpectators(SpectatorRound),
     /// A message sent as the game is over before the server closes the connection.
     ClientGoodbye(String),
     /// A player was killed.
@@ -30,16 +28,6 @@ pub enum GameMessage {
 }
 
 impl GameMessage {
-    /// Creates an instance of the ClientHello message.
-    pub fn hello() -> Self {
-        Self::ClientHello
-    }
-
-    /// Creates an instance of the GameRound message.
-    pub fn game_round(game_state: GameState, player_id: PlayerId) -> Self {
-        Self::GameRound(GameRound::new(&game_state, &player_id))
-    }
-
     /// Returns the message type in a human readable format.
     pub fn message_type(&self) -> String {
         match self {
@@ -71,22 +59,69 @@ pub struct GameRound {
 }
 
 impl GameRound {
-    fn new(game_state: &GameState, current_player: &PlayerId) -> Self {
-        let walls = game_state.map.get_wall_coords();
-
-        let visible_players = game_state
-            .players
-            .iter()
-            .filter(|&(id, p)| id == current_player || p.is_visible())
-            .map(|(id, p)| (id.clone(), p.get_pos().clone()))
-            .collect();
-
+    /// Create a new GameRound
+    pub fn new(
+        width: u32,
+        height: u32,
+        walls: Vec<Coordinate>,
+        visible_players: HashMap<PlayerId, Coordinate>,
+        own_player_id: PlayerId,
+    ) -> Self {
         Self {
-            width: game_state.map.width,
-            height: game_state.map.height,
+            width,
+            height,
             walls,
             visible_players,
-            own_player_id: current_player.clone(),
+            own_player_id,
+        }
+    }
+
+    // fn new(game_state: &GameState, current_player: &PlayerId) -> Self {
+    //     let walls = game_state.map.get_wall_coords();
+
+    //     let visible_players = game_state
+    //         .players
+    //         .iter()
+    //         .filter(|&(id, p)| id == current_player || p.is_visible())
+    //         .map(|(id, p)| (id.clone(), p.get_pos().clone()))
+    //         .collect();
+
+    //     Self {
+    //         width: game_state.map.width,
+    //         height: game_state.map.height,
+    //         walls,
+    //         visible_players,
+    //         own_player_id: current_player.clone(),
+    //     }
+    // }
+}
+
+/// Data sent to all spectators every round.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SpectatorRound {
+    /// The map width.
+    pub width: u32,
+    /// The map height.
+    pub height: u32,
+    /// A list of all coordinate that contain walls.
+    pub walls: Vec<Coordinate>,
+    /// A map of all players that became visible after the last move and their (then) coordinates.
+    pub visible_players: HashMap<PlayerId, Coordinate>,
+}
+
+impl SpectatorRound {
+    /// Create a new SpectatorRound
+    pub fn new(
+        width: u32,
+        height: u32,
+        walls: Vec<Coordinate>,
+        visible_players: HashMap<PlayerId, Coordinate>,
+    ) -> Self {
+        Self {
+            width,
+            height,
+            walls,
+            visible_players,
         }
     }
 }

@@ -1,16 +1,14 @@
 use std::{collections::HashSet, path::Path};
 
+use invisibot_common::{
+    coord,
+    coordinate::Coordinate,
+    direction::Direction,
+    game_error::{GameError, GameResult},
+};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    coord,
-    game_map::{tile::Tile, tile_type::TileType},
-    utils::{
-        coordinate::Coordinate,
-        direction::Direction,
-        game_error::{GameError, GameResult},
-    },
-};
+use crate::game_map::{tile::Tile, tile_type::TileType};
 
 /// The game map itself, where the game plays out.
 #[derive(Debug, Clone, Serialize, Deserialize)]

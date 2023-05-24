@@ -1,6 +1,5 @@
+use invisibot_common::direction::Direction;
 use serde::{Deserialize, Serialize};
-
-use crate::utils::direction::Direction;
 
 /// A clients response when asked to make a move.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

@@ -9,7 +9,7 @@
 pub use async_trait;
 
 /// Types & logic intended for communication with clients.
-pub mod clients;
+pub mod client_handler;
 #[doc = "inline"]
 pub mod game;
 #[doc = "inline"]
@@ -18,7 +18,5 @@ pub mod game_config;
 pub mod game_map;
 /// Types & logic intended for persisting games.
 pub mod persistence;
-/// Basic utility types
-pub mod utils;
 
 mod game_logic;

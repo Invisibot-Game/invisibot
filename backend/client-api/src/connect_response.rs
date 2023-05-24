@@ -1,4 +1,4 @@
-use crate::persistence::GameId;
+use invisibot_common::GameId;
 use serde::{Deserialize, Serialize};
 
 /// A response expected to be sent when receiving a ClientHello message.

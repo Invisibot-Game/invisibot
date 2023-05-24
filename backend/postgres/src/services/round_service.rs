@@ -1,6 +1,5 @@
-use invisibot_game::{
-    game_map::player::Player, persistence::GameId, utils::coordinate::Coordinate,
-};
+use invisibot_common::{coordinate::Coordinate, GameId};
+use invisibot_game::game_map::player::Player;
 
 use crate::{
     db_connection::DBConnection,

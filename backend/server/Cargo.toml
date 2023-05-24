@@ -19,8 +19,14 @@ tokio = "1.28"
 [dependencies.invisibot_game]
 path = "../game"
 
-[dependencies.websocket_api]
+[dependencies.invisibot_websocket_api]
 path = "../websocket-api"
 
 [dependencies.invisibot_postgres]
 path = "../postgres"
+
+[dependencies.invisibot_common]
+path = "../common"
+
+[dependencies.invisibot_client_api]
+path = "../client-api"
