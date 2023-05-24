@@ -4,5 +4,3 @@ pub mod game_map;
 pub mod player;
 #[doc = "inline"]
 pub mod tile;
-#[doc = "inline"]
-pub mod tile_type;

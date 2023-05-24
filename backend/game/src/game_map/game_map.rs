@@ -5,10 +5,11 @@ use invisibot_common::{
     coordinate::Coordinate,
     direction::Direction,
     game_error::{GameError, GameResult},
+    tile_type::TileType,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::game_map::{tile::Tile, tile_type::TileType};
+use crate::game_map::tile::Tile;
 
 /// The game map itself, where the game plays out.
 #[derive(Debug, Clone, Serialize, Deserialize)]

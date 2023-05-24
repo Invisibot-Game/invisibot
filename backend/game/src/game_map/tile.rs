@@ -1,7 +1,5 @@
-use invisibot_common::coordinate::Coordinate;
+use invisibot_common::{coordinate::Coordinate, tile_type::TileType};
 use serde::{Deserialize, Serialize};
-
-use super::tile_type::TileType;
 
 /// A tile on the game map.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

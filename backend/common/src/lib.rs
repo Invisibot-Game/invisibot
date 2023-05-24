@@ -17,3 +17,5 @@ pub mod direction;
 pub mod game_error;
 #[doc = "inline"]
 pub mod player_id;
+#[doc = "inline"]
+pub mod tile_type;
