@@ -5,7 +5,7 @@ use invisibot_postgres::postgres_handler::PostgresHandler;
 use rocket::{http::Status, serde::json::Json, State};
 use uuid::Uuid;
 
-use crate::{api::response::GameResponse, config::Config};
+use crate::api::response::GameResponse;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -113,6 +113,7 @@ pub async fn get_game(
 pub struct NewGameRequest {
     num_players: usize,
     num_rounds: usize,
+    map_name: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -125,13 +126,12 @@ pub struct NewGameResponse {
 pub async fn new_game(
     request: Json<NewGameRequest>,
     pg_handler: &State<PostgresHandler>,
-    config: &State<Config>,
 ) -> GameResponse<NewGameResponse> {
     let game_id = match pg_handler
         .new_game(
             request.num_players as u32,
             request.num_rounds as u32,
-            config.map_dir.clone(),
+            format!("./resources/maps/{}", request.map_name),
         )
         .await
     {
