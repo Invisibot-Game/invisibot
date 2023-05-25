@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use ::serde::{Deserialize, Serialize};
 use invisibot_common::{coordinate::Coordinate, direction::Direction, GameId};
 use invisibot_game::persistence::completed_game::{CompletedGame, RoundPlayer};
@@ -6,6 +8,20 @@ use rocket::{http::Status, serde::json::Json, State};
 use uuid::Uuid;
 
 use crate::api::response::GameResponse;
+
+const ACCESS_CONTROL_ALLOW_METHODS_HEADER_NAME: &str = "Access-Control-Allow-Methods";
+
+#[options("/games")]
+pub async fn game_options() -> GameResponse<()> {
+    GameResponse::ok_with(
+        (),
+        Status::Ok,
+        HashMap::from([(
+            ACCESS_CONTROL_ALLOW_METHODS_HEADER_NAME,
+            "POST, GET, OPTIONS",
+        )]),
+    )
+}
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

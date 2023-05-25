@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use api::games::{get_game, get_games, new_game};
+use api::games::{game_options, get_game, get_games, new_game};
 use api::maps::get_maps;
 use config::Config;
 use invisibot_postgres::{db_connection::DBConnection, postgres_handler::PostgresHandler};
@@ -39,7 +39,10 @@ async fn rocket() -> _ {
             "/api/maps",
             FileServer::from(relative!("../resources/maps")),
         )
-        .mount("/api", routes![get_game, new_game, get_games, get_maps])
+        .mount(
+            "/api",
+            routes![get_game, new_game, get_games, get_maps, game_options],
+        )
         .manage(postgres_handler);
 
     if config.development_mode {
@@ -62,6 +65,8 @@ impl Fairing for Cors {
 
     async fn on_response<'r>(&self, _request: &'r Request<'_>, response: &mut Response<'r>) {
         response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
+        response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
+        response.set_header(Header::new("Access-Control-Allow-Headers", "Content-Type"));
     }
 }
 
