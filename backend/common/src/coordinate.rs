@@ -71,6 +71,7 @@ mod display_tests {
 
 #[cfg(test)]
 mod translate_tests {
+    use crate::coordinate::Coordinate;
     use crate::direction::Direction;
 
     #[test]
