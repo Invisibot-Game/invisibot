@@ -16,12 +16,6 @@ pub struct WsPoolManager {
     games: HashMap<GameId, GameSetup>,
 }
 
-struct GameSetup {
-    max_players: u32,
-    curr_players: Vec<WsClient>,
-    spectators: Vec<WsClient>,
-}
-
 impl WsPoolManager {
     pub fn init(pg_handler: PostgresHandler, websocket_port: u32) -> Self {
         let host = format!("0.0.0.0:{websocket_port}");
@@ -68,11 +62,16 @@ impl WsPoolManager {
             }
             (setup.max_players.clone() as usize, setup.curr_players.len())
         } else {
-            let game = self
-                .pg_handler
-                .get_game(game_id.clone())
-                .await
-                .expect("Game not found");
+            let game = match self.pg_handler.get_game(game_id.clone()).await {
+                Ok(g) => g,
+                Err(e) => {
+                    println!("Failed to retrieve game from database, err: {e}");
+                    client.send_message(GameMessage::ServerError(
+                        "Failed to retrieve game".to_string(),
+                    ));
+                    return;
+                }
+            };
 
             if let Some(game) = game {
                 if game.started_at.is_some() {
@@ -113,11 +112,13 @@ impl WsPoolManager {
 
         if curr_players == num_players {
             println!("All players are in, starting game {game_id}");
-            let setup = self.games.remove(&game_id).unwrap(); // Should always exist here
-            self.pg_handler
-                .set_game_started(game_id.clone())
-                .await
-                .expect("Failed to set game as started");
+            let mut setup = self.games.remove(&game_id).unwrap(); // Should always exist here
+            if let Err(e) = self.pg_handler.set_game_started(game_id.clone()).await {
+                println!("Failed to set game as started, err: {e}");
+                setup.abort_game("Failed to start game");
+                return;
+            }
+
             let game_pg_handler = self.pg_handler.clone();
             task::spawn(play_game(game_id, setup, game_pg_handler));
         }
@@ -146,4 +147,19 @@ async fn play_game(game_id: GameId, setup: GameSetup, pg_handler: PostgresHandle
         .await
         .expect("Failed to create new game");
     game.run_game().await.expect("Failed to run game");
+}
+
+struct GameSetup {
+    max_players: u32,
+    curr_players: Vec<WsClient>,
+    spectators: Vec<WsClient>,
+}
+
+impl GameSetup {
+    fn abort_game<'a>(&mut self, message: &'a str) {
+        self.curr_players.iter_mut().for_each(|c| {
+            c.send_message(GameMessage::ServerError(message.to_string()));
+            c.close();
+        })
+    }
 }

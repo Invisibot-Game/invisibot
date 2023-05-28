@@ -11,6 +11,8 @@ struct GameState {}
 pub enum GameMessage {
     /// A welcome message sent to the clients as they connect.
     ClientHello,
+    /// Something went wrong on the server.
+    ServerError(String),
     /// A message sent on each game round requesting moves from the clients.
     GameRound(GameRound),
     /// A message sent on each game round to all spectators.
@@ -32,6 +34,7 @@ impl GameMessage {
     pub fn message_type(&self) -> String {
         match self {
             Self::ClientHello => "Client Hello".to_string(),
+            Self::ServerError(_) => "Server error".to_string(),
             Self::GameRound(_) => "Game Round".to_string(),
             Self::GameRoundSpectators(_) => "Game Round Spectator".to_string(),
             Self::ClientGoodbye(_) => "Client Goodbye".to_string(),
