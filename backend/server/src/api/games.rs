@@ -113,7 +113,7 @@ pub async fn get_game(
         Err(PostgresError::GameNotFinished) => {
             return GameResponse::err(
                 Status::UnprocessableEntity,
-                format!("The game has not yet been finished, please try again later"),
+                "The game has not yet been finished, please try again later".to_string(),
             )
         }
         Err(e) => {
