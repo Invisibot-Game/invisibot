@@ -13,7 +13,7 @@ use invisibot_common::{
 use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Serialize};
 
-use crate::game_map::{game_map::GameMap, player::Player};
+use crate::game_map::{map::GameMap, player::Player};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameState {
@@ -64,7 +64,7 @@ impl GameState {
         actions
             .iter()
             .filter(|&(_, resp)| resp == &RoundResponse::Shoot)
-            .map(|(p, _)| p.clone())
+            .map(|(p, _)| *p)
             .collect()
     }
 
@@ -72,7 +72,7 @@ impl GameState {
         actions
             .iter()
             .filter_map(|(player_id, resp)| match resp {
-                RoundResponse::Rotate(dir) => Some((player_id.clone(), dir.clone())),
+                RoundResponse::Rotate(dir) => Some((*player_id, dir.clone())),
                 _ => None,
             })
             .collect()
@@ -85,13 +85,13 @@ impl GameState {
         actions
             .iter()
             .filter_map(|(player_id, resp)| match resp {
-                RoundResponse::Move(dir) => Some((player_id.clone(), dir.clone())),
+                RoundResponse::Move(dir) => Some((*player_id, dir.clone())),
                 _ => None,
             })
             .map(|(player_id, dir)| {
                 let player = self.get_player(&player_id)?;
                 let new_tile = self.map.get_tile_translated(player.get_pos(), &dir)?;
-                Ok((player_id.clone(), new_tile.coord))
+                Ok((player_id, new_tile.coord))
             })
             .collect()
     }
@@ -104,7 +104,7 @@ impl GameState {
         for id in shooting.iter() {
             let player = self.get_player(id)?;
             let updated_player = player.shoot();
-            next_round_players.insert(id.clone(), updated_player);
+            next_round_players.insert(*id, updated_player);
         }
 
         Ok(())
@@ -134,12 +134,12 @@ impl GameState {
         // Insert the invalid moves
         for (id, requested_dest) in moving.iter() {
             if !self.map.is_pos_walkable(requested_dest)
-                || pos_contains_player(&next_round_players, requested_dest)
+                || pos_contains_player(next_round_players, requested_dest)
             {
                 let player = self.get_player(id)?;
-                next_round_players.insert(id.clone(), player.clone());
+                next_round_players.insert(*id, player.clone());
             } else {
-                unhandled_moves.insert(id.clone(), requested_dest.clone());
+                unhandled_moves.insert(*id, requested_dest.clone());
             }
         }
 
@@ -149,23 +149,22 @@ impl GameState {
         for (id, requested_dest) in unhandled_moves.into_iter() {
             let collision = collisions
                 .get(&requested_dest)
-                .ok_or(GameError::InvalidGameState(format!(
-                    "Player not in collisions map!"
-                )))?
-                .clone();
+                .ok_or(GameError::InvalidGameState(
+                    "Player not in collisions map!".to_string(),
+                ))?;
 
             let player = self.get_player(&id)?;
 
             match collision {
                 0 => {
-                    return Err(GameError::InvalidGameState(format!(
-                        "0 collisions when at least 1 player wants to move there?"
-                    )));
+                    return Err(GameError::InvalidGameState(
+                        "0 collisions when at least 1 player wants to move there?".to_string(),
+                    ));
                 }
                 1 => {
                     let updated_player = player.update_pos(requested_dest, false);
                     // The only player who wants to go there and nobody is currently there.
-                    next_round_players.insert(id.clone(), updated_player);
+                    next_round_players.insert(id, updated_player);
                 }
                 _ => {
                     // Had collision
@@ -211,7 +210,7 @@ impl GameState {
                 let new_count = if let Some(count) = acc.get(&coord) {
                     count + 1
                 } else {
-                    1 as usize
+                    1_usize
                 };
 
                 acc.insert(coord, new_count);
@@ -220,12 +219,11 @@ impl GameState {
     }
 
     fn get_player(&self, player_id: &PlayerId) -> GameResult<&Player> {
-        Ok(self
-            .players
+        self.players
             .get(player_id)
             .ok_or(GameError::InvalidGameState(format!(
                 "Player with id {player_id} did not exist?"
-            )))?)
+            )))
     }
 
     fn handle_shots(
@@ -238,9 +236,9 @@ impl GameState {
         for player_id in shooting_players.into_iter() {
             let player = next_round_players
                 .get(&player_id)
-                .ok_or(GameError::InvalidGameState(format!(
-                    "Shooting player not in next rounds players?"
-                )))?;
+                .ok_or(GameError::InvalidGameState(
+                    "Shooting player not in next rounds players?".to_string(),
+                ))?;
 
             self.map
                 .get_line_of_sight(player.get_pos(), player.get_rotation())
@@ -253,11 +251,11 @@ impl GameState {
         let players_to_delete: HashSet<PlayerId> = next_round_players
             .iter()
             .filter(|(_, player)| kill_on_tiles.contains(player.get_pos()))
-            .map(|(id, _)| id.clone())
+            .map(|(id, _)| *id)
             .collect();
 
         players_to_delete.iter().for_each(|id| {
-            next_round_players.remove(&id);
+            next_round_players.remove(id);
         });
 
         Ok((kill_on_tiles, players_to_delete))
@@ -266,10 +264,7 @@ impl GameState {
 
 #[inline(always)]
 fn pos_contains_player(map: &HashMap<PlayerId, Player>, pos: &Coordinate) -> bool {
-    match get_player_by_coord(map, pos) {
-        Some(_) => true,
-        None => false,
-    }
+    get_player_by_coord(map, pos).is_some()
 }
 
 #[inline(always)]
@@ -309,7 +304,7 @@ fn create_players(
         .enumerate()
         .map(|(index, id)| {
             Ok((
-                id.clone(),
+                id,
                 Player::new(
                     id,
                     starting_positions

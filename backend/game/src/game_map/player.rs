@@ -47,7 +47,7 @@ impl Player {
             Coordinate::dir_between(&self.pos, &new_pos).unwrap_or(self.rotation.clone());
 
         Self {
-            id: self.id.clone(),
+            id: self.id,
             pos: new_pos,
             rotation,
             visible,
@@ -57,7 +57,7 @@ impl Player {
     /// Returns the player with an updated rotation.
     pub fn rotate(&self, new_rotation: Direction) -> Self {
         Self {
-            id: self.id.clone(),
+            id: self.id,
             pos: self.pos.clone(),
             rotation: new_rotation,
             visible: true,
@@ -67,7 +67,7 @@ impl Player {
     /// Returns the player after having shot a shot (sets it to be visible).
     pub fn shoot(&self) -> Self {
         Self {
-            id: self.id.clone(),
+            id: self.id,
             pos: self.pos.clone(),
             rotation: self.rotation.clone(),
             visible: true,
@@ -77,7 +77,7 @@ impl Player {
     /// Returns the player with updated visibility.
     pub fn update_visibility(&self, visible: bool) -> Self {
         Self {
-            id: self.id.clone(),
+            id: self.id,
             pos: self.pos.clone(),
             rotation: self.rotation.clone(),
             visible,

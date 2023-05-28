@@ -74,21 +74,16 @@ impl GameMap {
         wall_positions: HashSet<Coordinate>,
     ) -> Self {
         let tiles = (0..height)
-            .into_iter()
-            .map(|y| {
-                (0..width)
-                    .into_iter()
-                    .map(move |x| coord!(x.clone(), y.clone()))
-                    .map(|coord| {
-                        let tile_type = if wall_positions.contains(&coord) {
-                            TileType::Wall
-                        } else {
-                            TileType::Empty
-                        };
-                        Tile { coord, tile_type }
-                    })
+            .flat_map(|y| {
+                (0..width).map(move |x| coord!(x, y)).map(|coord| {
+                    let tile_type = if wall_positions.contains(&coord) {
+                        TileType::Wall
+                    } else {
+                        TileType::Empty
+                    };
+                    Tile { coord, tile_type }
+                })
             })
-            .flatten()
             .collect();
 
         Self {
@@ -101,7 +96,7 @@ impl GameMap {
 
     /// Returns the tile at the coordinate `coord` or an error if there is no such tile.
     pub fn get_tile_by_coord(&self, coord: &Coordinate) -> GameResult<Tile> {
-        return self.get_tile(coord.x, coord.y);
+        self.get_tile(coord.x, coord.y)
     }
 
     /// Returns the tile at the coordinate of `(x, y)` or an error if there is no such tile.

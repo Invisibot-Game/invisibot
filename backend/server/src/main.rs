@@ -28,7 +28,7 @@ async fn rocket() -> _ {
     let database_connection = DBConnection::new(&config.database_url).await;
 
     let db_clone = database_connection.clone();
-    let port = config.websocket_port.clone();
+    let port = config.websocket_port;
 
     task::spawn(start_ws_pool(db_clone, port));
 

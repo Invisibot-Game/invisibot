@@ -166,11 +166,7 @@ fn completed_game_to_rounds_response(completed_game: CompletedGame) -> Vec<Round
         .rounds
         .into_iter()
         .map(|round| RoundResponse {
-            players: round
-                .players
-                .into_iter()
-                .map(|p| to_player_response(p))
-                .collect(),
+            players: round.players.into_iter().map(to_player_response).collect(),
             width: completed_game.map.width,
             height: completed_game.map.height,
             wall_tiles: completed_game.map.get_wall_coords(),

@@ -10,13 +10,13 @@ pub enum PostgresError {
 
 pub type PostgresResult<T> = Result<T, PostgresError>;
 
-impl Into<GameError> for PostgresError {
-    fn into(self) -> GameError {
-        match self {
-            Self::GameError(g) => g,
+impl From<PostgresError> for GameError {
+    fn from(value: PostgresError) -> Self {
+        match value {
+            PostgresError::GameError(g) => g,
             err => {
                 println!("A postgres error occurred {err}");
-                GameError::PersistanceError(err.to_string())
+                Self::PersistanceError(err.to_string())
             }
         }
     }
