@@ -1,6 +1,6 @@
 use crate::{
     db_connection::DBConnection,
-    postgres_error::PostgresResult,
+    postgres_error::{PostgresError, PostgresResult},
     repositories::{
         game_repository, map_repository, map_wall_repository, player_repository, round_repository,
         shot_tile_repository, starting_position_repository,
@@ -33,9 +33,12 @@ pub async fn get_finished_game(
     conn: &DBConnection,
     game_id: GameId,
 ) -> PostgresResult<CompletedGame> {
-    // TODO: Check if the game is actually finished.
-
     let mut transaction = conn.new_transaction().await?;
+
+    let game = game_repository::get_game_by_id(&mut transaction, game_id).await?;
+    if game.finished_at.is_none() {
+        return Err(PostgresError::GameNotFinished);
+    }
 
     let map = map_repository::get_map_by_game_id(&mut transaction, game_id).await?;
     let map_walls = map_wall_repository::get_by_map_id(&mut transaction, map.id).await?;
