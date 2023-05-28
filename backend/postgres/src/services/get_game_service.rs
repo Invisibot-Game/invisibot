@@ -94,7 +94,7 @@ pub async fn get_finished_game(
     Ok(CompletedGame {
         game_id,
         map: game_map,
-        rounds: rounds,
+        rounds,
     })
 }
 

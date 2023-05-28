@@ -32,9 +32,7 @@ impl PersistenceHandler for PostgresHandler {
     }
 
     async fn set_game_map(&self, game_id: GameId, map: GameMap) -> GameResult<()> {
-        update_game_service::set_game_map(&self.connection, game_id, map)
-            .await
-            .map_err(GameError::from)?;
+        update_game_service::set_game_map(&self.connection, game_id, map).await?;
 
         Ok(())
     }
@@ -47,8 +45,7 @@ impl PersistenceHandler for PostgresHandler {
         shot_tiles: Vec<Coordinate>,
     ) -> GameResult<()> {
         round_service::insert_round(&self.connection, game_id, round_number, players, shot_tiles)
-            .await
-            .map_err(GameError::from)?;
+            .await?;
         Ok(())
     }
 
@@ -74,9 +71,10 @@ impl PostgresHandler {
         num_rounds: u32,
         map_dir: String,
     ) -> GameResult<GameId> {
-        new_game_service::insert_new_game(&self.connection, num_players, num_rounds, map_dir)
-            .await
-            .map_err(GameError::from)
+        Ok(
+            new_game_service::insert_new_game(&self.connection, num_players, num_rounds, map_dir)
+                .await?,
+        )
     }
 
     /// Mark a game as started.

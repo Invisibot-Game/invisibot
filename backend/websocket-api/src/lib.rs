@@ -47,7 +47,7 @@ impl ClientHandler for WsHandler {
             .iter_mut()
             .map(|(id, client)| {
                 let response = client.receive_message();
-                (id.clone(), response)
+                (*id, response)
             })
             .collect()
     }
@@ -77,13 +77,6 @@ impl ClientHandler for WsHandler {
 }
 
 impl WsHandler {
-    pub fn new() -> Self {
-        Self {
-            clients: HashMap::new(),
-            spectators: Vec::new(),
-        }
-    }
-
     pub fn add_player(&mut self, ws: WsClient) {
         let player_id = self.clients.len() as PlayerId;
         self.clients.insert(player_id, ws);
@@ -101,7 +94,7 @@ impl WsHandler {
     }
 
     pub fn get_player_ids(&self) -> HashSet<PlayerId> {
-        self.clients.iter().map(|(id, _)| id.clone()).collect()
+        self.clients.keys().copied().collect()
     }
 }
 
@@ -119,7 +112,7 @@ impl WsClient {
     pub fn send_message(&mut self, message: GameMessage) {
         let serialized = serde_json::to_string(&message).unwrap();
         self.conn
-            .write_message(Message::text(&serialized))
+            .write_message(Message::text(serialized))
             .expect("Failed to send message")
     }
 

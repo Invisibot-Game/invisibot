@@ -29,12 +29,12 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
         game_id: GameId,
         player_ids: HashSet<PlayerId>,
     ) -> GameResult<Self> {
-        let game_config = persistence_handler.get_game_config(game_id.clone()).await?;
+        let game_config = persistence_handler.get_game_config(game_id).await?;
 
         let initial_game_state = GameState::new(player_ids, &game_config.map_dir)?;
 
         persistence_handler
-            .set_game_map(game_id.clone(), initial_game_state.map.clone())
+            .set_game_map(game_id, initial_game_state.map.clone())
             .await?;
 
         Ok(Self {
