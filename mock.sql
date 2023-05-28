@@ -559,3 +559,10 @@ VALUES
 (3, '7e6eee99-0d5d-4419-ba12-372fdf56324f',	78,	1,	14,	'left',	'f'),
 (3, '7e6eee99-0d5d-4419-ba12-372fdf56324f',	79,	1,	13,	'up',	'f'),
 (0, '7e6eee99-0d5d-4419-ba12-372fdf56324f',	79,	1,	10,	'up',	't');
+
+INSERT into tournament(tournament_id, name)
+VALUES
+('7e6eee99-0d5d-4419-ba12-372fdf56324f', 'The great tournament of the gods'),
+('7e6eee99-0d5d-4419-ba12-372fdf56324e', 'Testy mc tournamentson'),
+('7e6eee99-0d5d-4419-ba12-372fdf56324c', 'Tournament 2');
+
