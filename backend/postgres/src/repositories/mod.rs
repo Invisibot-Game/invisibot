@@ -9,6 +9,7 @@ pub mod player_repository;
 pub mod round_repository;
 pub mod shot_tile_repository;
 pub mod starting_position_repository;
+pub mod tournament_repository;
 
 pub type DB = Postgres;
 

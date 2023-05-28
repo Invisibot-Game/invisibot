@@ -5,3 +5,4 @@ pub mod player;
 pub mod round;
 pub mod shot_tile;
 pub mod starting_position;
+pub mod tournament;
