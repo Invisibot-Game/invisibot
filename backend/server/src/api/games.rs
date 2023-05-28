@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use ::serde::{Deserialize, Serialize};
 use invisibot_common::{coordinate::Coordinate, direction::Direction, GameId};
 use invisibot_game::persistence::completed_game::{CompletedGame, RoundPlayer};
-use invisibot_postgres::postgres_handler::PostgresHandler;
+use invisibot_postgres::{postgres_error::PostgresError, postgres_handler::PostgresHandler};
 use rocket::{http::Status, serde::json::Json, State};
 use uuid::Uuid;
 
@@ -110,6 +110,12 @@ pub async fn get_game(
 
     let completed_game = match pg_handler.get_finished_game(game_id).await {
         Ok(g) => g,
+        Err(PostgresError::GameNotFinished) => {
+            return GameResponse::err(
+                Status::UnprocessableEntity,
+                format!("The game has not yet been finished, please try again later"),
+            )
+        }
         Err(e) => {
             println!("Failed to retrieve game, err: {e}");
             return GameResponse::err(

@@ -6,9 +6,10 @@
 #[doc = "inline"]
 pub mod db_connection;
 #[doc = "inline"]
+pub mod postgres_error;
+#[doc = "inline"]
 pub mod postgres_handler;
 
-mod postgres_error;
 mod repositories;
 mod services;
 mod tables;
