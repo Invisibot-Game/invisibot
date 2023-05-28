@@ -1,8 +1,4 @@
-use invisibot_common::{
-    coordinate::Coordinate,
-    game_error::{GameError, GameResult},
-    GameId,
-};
+use invisibot_common::{coordinate::Coordinate, game_error::GameResult, GameId};
 use invisibot_game::{
     async_trait::async_trait,
     game_config::GameConfig,

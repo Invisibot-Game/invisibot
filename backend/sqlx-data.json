@@ -1,0 +1,670 @@
+{
+  "db": "PostgreSQL",
+  "37cfad8f521128109a87d5a7e07fa2b84c83e94e516f86e3e02cfc57f85b9d5e": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 1,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "started_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "finished_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "num_players",
+          "ordinal": 4,
+          "type_info": "Int4"
+        },
+        {
+          "name": "max_num_rounds",
+          "ordinal": 5,
+          "type_info": "Int4"
+        },
+        {
+          "name": "map_dir",
+          "ordinal": 6,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Int4",
+          "Text"
+        ]
+      }
+    },
+    "query": "\nINSERT INTO game (num_players, max_num_rounds, map_dir)\nVALUES           ($1,          $2,             $3)\nRETURNING id, created_at, started_at, finished_at, num_players, max_num_rounds, map_dir\n        "
+  },
+  "3867f5dd70e51b08738d983defb24612d2ffc0eab96a8544dee04815f107154f": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "game_id",
+          "ordinal": 1,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "width",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "height",
+          "ordinal": 3,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\nSELECT id, game_id, width, height\nFROM map\nWHERE game_id = $1\n        "
+  },
+  "3fd776ef9cb716d13e2ead78fe6ab727e2abe3fca1b8d0516f34542f7d56c57d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\nUPDATE game\nSET finished_at = now()\nWHERE id = $1\n    "
+  },
+  "417deb37d56c1e127f6eb2ac38c2726cee2f243afb515e6f54143c4247db4bdb": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "game_id",
+          "ordinal": 1,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "width",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "height",
+          "ordinal": 3,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Int4",
+          "Int4"
+        ]
+      }
+    },
+    "query": "\nINSERT INTO map (game_id, width, height)\nVALUES          ($1,      $2,    $3)\nRETURNING id, game_id, width, height\n        "
+  },
+  "41d22cb0e03b2e651f42a925e073b12fd774ea880e9cecc48532b3efd2956c7a": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\nUPDATE game\nSET started_at = now()\nWHERE id = $1\n    "
+  },
+  "4f100d0af75ee5f72863815cf210058de87915a6348d61e09415c764f0d1d451": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 1,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "started_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "finished_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "num_players",
+          "ordinal": 4,
+          "type_info": "Int4"
+        },
+        {
+          "name": "max_num_rounds",
+          "ordinal": 5,
+          "type_info": "Int4"
+        },
+        {
+          "name": "map_dir",
+          "ordinal": 6,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\nSELECT id, created_at, started_at, finished_at, num_players, max_num_rounds, map_dir\nFROM game\nWHERE id = $1\n        "
+  },
+  "5d8ab2cb8193bdc6f7123b4bd242ab56791a75b5d59387d45e97ab9e7ae9cd47": {
+    "describe": {
+      "columns": [
+        {
+          "name": "map_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "x",
+          "ordinal": 1,
+          "type_info": "Int4"
+        },
+        {
+          "name": "y",
+          "ordinal": 2,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Int4",
+          "Int4"
+        ]
+      }
+    },
+    "query": "\nINSERT INTO map_starting_position(map_id, x,  y)\nVALUES                           ($1,     $2, $3)\nRETURNING map_id, x, y\n        "
+  },
+  "6ffa6584a32c2c18638ed13331766a0a496191e4b23d74e61a6fec8bf0471830": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "game_id",
+          "ordinal": 1,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "round_number",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "x",
+          "ordinal": 3,
+          "type_info": "Int4"
+        },
+        {
+          "name": "y",
+          "ordinal": 4,
+          "type_info": "Int4"
+        },
+        {
+          "name": "rotation",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "visible",
+          "ordinal": 6,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Uuid",
+          "Int4",
+          "Int4",
+          "Int4",
+          "Text",
+          "Bool"
+        ]
+      }
+    },
+    "query": "\nINSERT INTO player (id, game_id, round_number, x,  y,  rotation, visible)\nVALUES             ($1, $2,      $3,           $4, $5, $6,       $7)\nRETURNING id, game_id, round_number, x, y, rotation, visible\n        "
+  },
+  "7867ec8a218edd643b80fc15c7ac4ff11df8fcbc2283586a8d9ec8a58f589303": {
+    "describe": {
+      "columns": [
+        {
+          "name": "game_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "round_number",
+          "ordinal": 1,
+          "type_info": "Int4"
+        },
+        {
+          "name": "map_id",
+          "ordinal": 2,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Int4",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\nINSERT INTO round(game_id, round_number, map_id)\nVALUES           ($1,      $2,           $3)\nRETURNING game_id, round_number, map_id\n        "
+  },
+  "80c8700b22b6c65ff2527f1eb4263bf86a5f1bf7fdcc22a0d61ce073a4ce923b": {
+    "describe": {
+      "columns": [
+        {
+          "name": "map_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "x",
+          "ordinal": 1,
+          "type_info": "Int4"
+        },
+        {
+          "name": "y",
+          "ordinal": 2,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\nSELECT map_id, x, y\nFROM map_starting_position\nWHERE map_id = $1\n        "
+  },
+  "81d36b1267c7e1f970e6c24724f6ba50649a2d0b03ece53790f172c7a433db06": {
+    "describe": {
+      "columns": [
+        {
+          "name": "game_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "round_number",
+          "ordinal": 1,
+          "type_info": "Int4"
+        },
+        {
+          "name": "x",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "y",
+          "ordinal": 3,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Int4",
+          "Int4",
+          "Int4"
+        ]
+      }
+    },
+    "query": "\nINSERT INTO shot_tile (game_id, round_number, x,  y)\nVALUES                ($1,      $2,           $3, $4)\nRETURNING game_id, round_number, x, y\n        "
+  },
+  "95843b4905e2b1f3d7144888cac6b9ad78234b491d8ae744c5f679e9bce0afa5": {
+    "describe": {
+      "columns": [
+        {
+          "name": "game_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "round_number",
+          "ordinal": 1,
+          "type_info": "Int4"
+        },
+        {
+          "name": "x",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "y",
+          "ordinal": 3,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Int4"
+        ]
+      }
+    },
+    "query": "\nSELECT game_id, round_number, x, y\nFROM shot_tile\nWHERE game_id = $1 AND round_number = $2\n        "
+  },
+  "a5327582a07bb77de2811495158f9d853dc5f41d1946cf38365a13d0589f95b8": {
+    "describe": {
+      "columns": [
+        {
+          "name": "map_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "x",
+          "ordinal": 1,
+          "type_info": "Int4"
+        },
+        {
+          "name": "y",
+          "ordinal": 2,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Int4",
+          "Int4"
+        ]
+      }
+    },
+    "query": "\nINSERT INTO map_wall (map_id, x, y)\nVALUES               ($1,     $2,    $3)\nRETURNING map_id, x, y\n        "
+  },
+  "bde1d4e1938bdb3ff06c5d3ec18e023390aa7be05ca800471147f3f7283a696c": {
+    "describe": {
+      "columns": [
+        {
+          "name": "map_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "x",
+          "ordinal": 1,
+          "type_info": "Int4"
+        },
+        {
+          "name": "y",
+          "ordinal": 2,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\nSELECT map_id, x, y\nFROM map_wall\nWHERE map_id = $1\n        "
+  },
+  "e522117a8af1127116f7058612af3a6f72b93d86f06d9f4e8e11f335eb8e63d1": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "game_id",
+          "ordinal": 1,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "round_number",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "x",
+          "ordinal": 3,
+          "type_info": "Int4"
+        },
+        {
+          "name": "y",
+          "ordinal": 4,
+          "type_info": "Int4"
+        },
+        {
+          "name": "rotation",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "visible",
+          "ordinal": 6,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Int4"
+        ]
+      }
+    },
+    "query": "\nSELECT id, game_id, round_number, x, y, rotation, visible\nFROM player\nWHERE game_id = $1 AND round_number = $2\n        "
+  },
+  "e64c6599ca980eda46fe4c56f06c9f5854a69c913667720a9e361e222d1463ce": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 1,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "started_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "finished_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "num_players",
+          "ordinal": 4,
+          "type_info": "Int4"
+        },
+        {
+          "name": "max_num_rounds",
+          "ordinal": 5,
+          "type_info": "Int4"
+        },
+        {
+          "name": "map_dir",
+          "ordinal": 6,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\nSELECT id, created_at, started_at, finished_at, num_players, max_num_rounds, map_dir\nFROM game\n        "
+  },
+  "f2e8c6117590380083c3e86157bbbb8fa6d48624fcaa9e5549215e2c22c20ef3": {
+    "describe": {
+      "columns": [
+        {
+          "name": "game_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "round_number",
+          "ordinal": 1,
+          "type_info": "Int4"
+        },
+        {
+          "name": "map_id",
+          "ordinal": 2,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\nSELECT game_id, round_number, map_id\nFROM round\nWHERE game_id = $1\n        "
+  }
+}
