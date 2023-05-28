@@ -89,6 +89,8 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
             dead_players.into_iter().for_each(|id: u32| {
                 self.client_handler
                     .broadcast_message(GameMessage::PlayerKilled(id));
+                self.client_handler
+                    .broadcast_spectators(GameMessage::PlayerKilled(id));
                 self.client_handler.disconnect_player(&id);
             });
 
@@ -122,6 +124,8 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
 
                     self.client_handler
                         .send_message(&winning_player, GameMessage::PlayerWon(winning_player));
+                    self.client_handler
+                        .broadcast_spectators(GameMessage::PlayerWon(winning_player));
 
                     break;
                 }
