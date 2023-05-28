@@ -10,7 +10,6 @@ pub async fn get_maps() -> GameResponse<Vec<String>> {
 fn get_map_urls() -> Vec<String> {
     fs::read_dir("resources/maps")
         .expect("Failed to read directory")
-        .into_iter()
         .map(|dir| {
             let dir = dir.expect("Failed to read directory");
             let file_name = dir.file_name();

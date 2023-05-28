@@ -1,5 +1,5 @@
 #[doc = "inline"]
-pub mod game_map;
+pub mod map;
 #[doc = "inline"]
 pub mod player;
 #[doc = "inline"]

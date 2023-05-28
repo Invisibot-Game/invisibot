@@ -60,9 +60,9 @@ impl WsPoolManager {
                     setup.spectators.push(client);
                 }
             }
-            (setup.max_players.clone() as usize, setup.curr_players.len())
+            (setup.max_players as usize, setup.curr_players.len())
         } else {
-            let game = match self.pg_handler.get_game(game_id.clone()).await {
+            let game = match self.pg_handler.get_game(game_id).await {
                 Ok(g) => g,
                 Err(e) => {
                     println!("Failed to retrieve game from database, err: {e}");
@@ -95,9 +95,9 @@ impl WsPoolManager {
                 self.games.insert(
                     resp.game_id,
                     GameSetup {
-                        max_players: game.num_players.clone(),
+                        max_players: game.num_players,
                         curr_players: players,
-                        spectators: spectators,
+                        spectators,
                     },
                 );
 
@@ -112,8 +112,9 @@ impl WsPoolManager {
 
         if curr_players == num_players {
             println!("All players are in, starting game {game_id}");
+
             let mut setup = self.games.remove(&game_id).unwrap(); // Should always exist here
-            if let Err(e) = self.pg_handler.set_game_started(game_id.clone()).await {
+            if let Err(e) = self.pg_handler.set_game_started(game_id).await {
                 println!("Failed to set game as started, err: {e}");
                 setup.abort_game("Failed to start game");
                 return;
@@ -156,7 +157,7 @@ struct GameSetup {
 }
 
 impl GameSetup {
-    fn abort_game<'a>(&mut self, message: &'a str) {
+    fn abort_game(&mut self, message: &str) {
         self.curr_players.iter_mut().for_each(|c| {
             c.send_message(GameMessage::ServerError(message.to_string()));
             c.close();

@@ -53,9 +53,9 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
         let mut state: GameState = self.initial_state.clone();
 
         for round_number in 0..(self.config.num_rounds - 1) {
-            state.players.iter().for_each(|(id, _)| {
+            state.players.iter().for_each(|(p_id, _)| {
                 self.client_handler.send_message(
-                    id,
+                    p_id,
                     GameMessage::GameRound(GameRound::new(
                         state.map.width,
                         state.map.height,
@@ -63,10 +63,10 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
                         state
                             .players
                             .iter()
-                            .filter(|&(id, p)| id == id || p.is_visible())
-                            .map(|(id, p)| (id.clone(), p.get_pos().clone()))
+                            .filter(|&(id, p)| p_id == id || p.is_visible())
+                            .map(|(id, p)| (*id, p.get_pos().clone()))
                             .collect(),
-                        id.clone(),
+                        *p_id,
                     )),
                 );
             });
@@ -78,8 +78,8 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
                     state
                         .players
                         .iter()
-                        .filter(|&(id, p)| id == id || p.is_visible())
-                        .map(|(id, p)| (id.clone(), p.get_pos().clone()))
+                        .filter(|&(_, p)| p.is_visible())
+                        .map(|(id, p)| (*id, p.get_pos().clone()))
                         .collect(),
                 )));
 
@@ -98,8 +98,8 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
                 .save_round(
                     self.game_id,
                     round_number as u32,
-                    state.players.iter().map(|(_, p)| p.clone()).collect(),
-                    state.shot_tiles.iter().map(|t| t.clone()).collect(),
+                    state.players.values().cloned().collect(),
+                    state.shot_tiles.iter().cloned().collect(),
                 )
                 .await?;
 
@@ -113,15 +113,13 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
                 }
                 1 => {
                     // We have a winner!
-                    let winning_player = state
+                    let winning_player = *state
                         .players
                         .values()
                         .collect::<Vec<&Player>>()
                         .first()
                         .unwrap() // We just validated that there were a player left.
-                        .get_id()
-                        .clone();
-
+                        .get_id();
                     self.client_handler
                         .send_message(&winning_player, GameMessage::PlayerWon(winning_player));
                     self.client_handler
@@ -150,7 +148,7 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
 
     /// Get the id for this game.
     pub fn get_id(&self) -> GameId {
-        self.game_id.clone()
+        self.game_id
     }
 
     /// Cleanup after this game.

@@ -43,7 +43,7 @@ impl Config {
 }
 
 fn load_env_str(key: &str) -> ConfigResult<String> {
-    let var = env::var(&key)?;
+    let var = env::var(key)?;
 
     if var.is_empty() {
         return Err(ConfigError::VarEmpty(key.to_string()));

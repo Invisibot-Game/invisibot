@@ -1,5 +1,5 @@
 use invisibot_common::GameId;
-use invisibot_game::game_map::game_map::GameMap;
+use invisibot_game::game_map::map::GameMap;
 
 use crate::{
     db_connection::DBConnection,

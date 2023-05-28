@@ -3,7 +3,7 @@ use invisibot_common::{coordinate::Coordinate, game_error::GameResult, GameId};
 
 use crate::{
     game_config::GameConfig,
-    game_map::{game_map::GameMap, player::Player},
+    game_map::{map::GameMap, player::Player},
 };
 
 #[doc = "inline"]

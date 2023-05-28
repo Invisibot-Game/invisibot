@@ -1,8 +1,12 @@
-use invisibot_common::{coordinate::Coordinate, game_error::GameResult, GameId};
+use invisibot_common::{
+    coordinate::Coordinate,
+    game_error::{GameError, GameResult},
+    GameId,
+};
 use invisibot_game::{
     async_trait::async_trait,
     game_config::GameConfig,
-    game_map::{game_map::GameMap, player::Player},
+    game_map::{map::GameMap, player::Player},
     persistence::{completed_game::CompletedGame, PersistenceHandler},
 };
 use sqlx::types::chrono::{DateTime, Utc};
@@ -30,7 +34,7 @@ impl PersistenceHandler for PostgresHandler {
     async fn set_game_map(&self, game_id: GameId, map: GameMap) -> GameResult<()> {
         update_game_service::set_game_map(&self.connection, game_id, map)
             .await
-            .map_err(|e| e.into())?;
+            .map_err(GameError::from)?;
 
         Ok(())
     }
@@ -44,7 +48,7 @@ impl PersistenceHandler for PostgresHandler {
     ) -> GameResult<()> {
         round_service::insert_round(&self.connection, game_id, round_number, players, shot_tiles)
             .await
-            .map_err(|e| e.into())?;
+            .map_err(GameError::from)?;
         Ok(())
     }
 
@@ -70,11 +74,9 @@ impl PostgresHandler {
         num_rounds: u32,
         map_dir: String,
     ) -> GameResult<GameId> {
-        Ok(
-            new_game_service::insert_new_game(&self.connection, num_players, num_rounds, map_dir)
-                .await
-                .map_err(|e| e.into())?,
-        )
+        new_game_service::insert_new_game(&self.connection, num_players, num_rounds, map_dir)
+            .await
+            .map_err(GameError::from)
     }
 
     /// Mark a game as started.

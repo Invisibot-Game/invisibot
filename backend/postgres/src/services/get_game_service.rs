@@ -11,7 +11,7 @@ use invisibot_common::coordinate::Coordinate;
 use invisibot_common::{coord, direction::Direction, player_id::PlayerId, GameId};
 use invisibot_game::{
     game_config::GameConfig,
-    game_map::game_map::GameMap,
+    game_map::map::GameMap,
     persistence::completed_game::{CompletedGame, GameRound, RoundPlayer},
 };
 
@@ -67,7 +67,7 @@ pub async fn get_finished_game(
         )
         .await?
         .into_iter()
-        .map(|p| player_to_round_player(p))
+        .map(player_to_round_player)
         .collect::<PostgresResult<Vec<RoundPlayer>>>()?;
 
         let shot_tiles = shot_tile_repository::get_by_game_and_round(

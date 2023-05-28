@@ -21,8 +21,8 @@ pub async fn insert_round(
     for player in players.into_iter() {
         player_repository::insert(
             &mut transaction,
-            player.get_id().clone(),
-            game_id.clone(),
+            *player.get_id(),
+            game_id,
             round.round_number as u32,
             player.get_pos().clone(),
             player.get_rotation().clone(),
@@ -32,13 +32,8 @@ pub async fn insert_round(
     }
 
     for coord in shot_tiles.into_iter() {
-        shot_tile_repository::insert(
-            &mut transaction,
-            game_id.clone(),
-            round.round_number as u32,
-            coord,
-        )
-        .await?;
+        shot_tile_repository::insert(&mut transaction, game_id, round.round_number as u32, coord)
+            .await?;
     }
 
     transaction.commit().await?;
