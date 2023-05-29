@@ -1,4 +1,4 @@
-use invisibot_common::{coordinate::Coordinate, game_error::GameResult, GameId};
+use invisibot_common::{coordinate::Coordinate, game_error::GameResult, GameId, tournament::Tournament};
 use invisibot_game::{
     async_trait::async_trait,
     game_config::GameConfig,
@@ -10,7 +10,7 @@ use sqlx::types::chrono::{DateTime, Utc};
 use crate::{
     db_connection::DBConnection,
     postgres_error::PostgresResult,
-    services::{get_game_service, new_game_service, round_service, update_game_service},
+    services::{get_game_service, new_game_service, round_service, update_game_service, get_tournament_service::get_tournaments},
 };
 
 /// A persistence handler for postgres
@@ -116,6 +116,17 @@ impl PostgresHandler {
                 finished_at: g.finished_at,
             })
             .collect())
+    }
+
+    /// Retrieve all tournaments.
+    pub async fn get_all_tournaments(&self) -> PostgresResult<Vec<Tournament>> {
+        let tournaments = get_tournaments(&self.connection).await?;
+        Ok(tournaments
+            .into_iter()
+            .map(|g| Tournament {
+                id: g.tournament_id,
+                name: g.tournament_name,
+            }).collect())
     }
 }
 

@@ -19,3 +19,6 @@ pub mod game_error;
 pub mod player_id;
 #[doc = "inline"]
 pub mod tile_type;
+#[doc = "inline"]
+pub mod tournament;
+
