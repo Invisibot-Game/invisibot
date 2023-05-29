@@ -11,9 +11,9 @@ pub async fn insert(
     Ok(sqlx::query_as!(
         Tournament,
         r#"
-INSERT INTO tournament (name)
+INSERT INTO tournament (tournament_name)
 VALUES           ($1)
-RETURNING tournament_id
+RETURNING tournament_id, tournament_name
         "#,
         tournament_name
     )
@@ -25,7 +25,7 @@ pub async fn get_all_tournaments(transaction: &mut Transaction<'_, DB>) -> Postg
     Ok(sqlx::query_as!(
         Tournament,
         r#"
-SELECT tournament_id, name
+SELECT tournament_id, tournament_name
 FROM tournament
         "#
     )
