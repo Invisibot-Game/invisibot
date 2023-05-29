@@ -21,3 +21,16 @@ pub async fn get_tournaments(pg_handler: &State<PostgresHandler>) -> GameRespons
         Err(e) => GameResponse::internal_err(),
     }
 }
+
+#[derive(Debug, Deserialize)]
+pub struct CreateTournament {
+    name: String
+}
+
+#[post("/tournament", data = "<request>")]
+pub async fn add_tournament(request: Json<CreateTournament>, pg_handler: &State<PostgresHandler>) -> GameResponse<Tournament> {
+    match pg_handler.new_tournament(request.name.clone()).await {
+        Ok(t) => GameResponse::ok(t),
+        Err(e) => GameResponse::internal_err(),
+    }
+}

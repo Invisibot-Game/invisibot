@@ -2,7 +2,7 @@
 
 use api::games::{game_options, get_game, get_games, new_game};
 use api::maps::get_maps;
-use api::tournament::get_tournaments;
+use api::tournament::{get_tournaments, add_tournament};
 use config::Config;
 use invisibot_postgres::{db_connection::DBConnection, postgres_handler::PostgresHandler};
 use rocket::fs::relative;
@@ -43,7 +43,7 @@ async fn rocket() -> _ {
         .mount(
             "/api",
             routes![get_game, new_game, get_games, get_maps, game_options,
-                    get_tournaments],
+                    get_tournaments, add_tournament],
         )
         .manage(postgres_handler);
 

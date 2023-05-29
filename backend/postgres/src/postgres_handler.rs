@@ -10,7 +10,8 @@ use sqlx::types::chrono::{DateTime, Utc};
 use crate::{
     db_connection::DBConnection,
     postgres_error::PostgresResult,
-    services::{get_game_service, new_game_service, round_service, update_game_service, get_tournament_service::get_tournaments},
+    services::{get_game_service, new_game_service, round_service, update_game_service, get_tournament_service::get_tournaments, new_tournament_service::insert_new_tournament},
+    repositories::tournament_repository,
 };
 
 /// A persistence handler for postgres
@@ -127,6 +128,22 @@ impl PostgresHandler {
                 id: g.tournament_id,
                 name: g.tournament_name,
             }).collect())
+    }
+
+    /// Start a new game
+    pub async fn new_tournament(
+        &self,
+        name: String,
+    ) -> GameResult<Tournament> {
+        Ok(
+            insert_new_tournament(&self.connection, name)
+                .await
+                .map_err(|e| e.into())
+                .map(|t| Tournament{
+                    id: t.tournament_id,
+                    name: t.tournament_name,
+                })?,
+        )
     }
 }
 
