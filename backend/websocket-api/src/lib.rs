@@ -125,7 +125,13 @@ impl WsClient {
         let text_response = response
             .to_text()
             .expect("Failed to read text from response");
-        serde_json::from_str(text_response).expect("Failed to parse json from response")
+        match serde_json::from_str(text_response) {
+            Ok(m) => m,
+            Err(e) => {
+                eprintln!("Failed to parse message [{text_response}], got err {e}");
+                todo!("ERROR HANDLING");
+            }
+        }
     }
 
     pub fn close(&mut self) {
