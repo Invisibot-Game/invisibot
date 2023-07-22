@@ -91,7 +91,7 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
                             eprintln!("An error occurred during the response for player {player_id}, they are now gone from the game");
                             self.client_handler.broadcast_message(GameMessage::PlayerKilled(player_id));
                             self.client_handler.broadcast_spectators(GameMessage::PlayerKilled(player_id));
-                            None                            
+                            None
                         }
                     }
                 }
