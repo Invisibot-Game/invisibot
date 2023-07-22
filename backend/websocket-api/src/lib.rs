@@ -146,8 +146,9 @@ impl WsClient {
 
     pub fn close(&mut self) {
         println!("Closing WS connection");
-        self.conn
-            .close(None)
-            .expect("Dammit, failed to disconnect player");
+
+        if self.conn.can_write() {
+            self.conn.close(None).expect("Failed to disconnect player");
+        }
     }
 }
