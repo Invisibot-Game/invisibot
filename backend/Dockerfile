@@ -13,7 +13,6 @@ RUN SQLX_OFFLINE=true cargo build --release --target x86_64-unknown-linux-musl
 RUN strip target/x86_64-unknown-linux-musl/release/invisibot_server
 
 
-
 FROM scratch
 WORKDIR /
 
@@ -23,5 +22,6 @@ EXPOSE 8080
 COPY postgres/migrations ./
 COPY --from=build /app/target/x86_64-unknown-linux-musl/release/invisibot_server ./invisibot_server
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=build /app/resources ./resources
 
 CMD ["./invisibot_server"]
