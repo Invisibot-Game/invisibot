@@ -31,7 +31,7 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> ConfigResult<Config> {
-        dotenv::dotenv()?;
+        dotenv::dotenv().ok();
 
         Ok(Config {
             websocket_port: load_env_num("WEBSOCKET_PORT")?,
