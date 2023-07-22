@@ -17,7 +17,7 @@ pub trait ClientHandler {
     /// Receive messages of type `ResponseMessage` from all connected clients.
     fn receive_messages<ResponseMessage: DeserializeOwned>(
         &mut self,
-    ) -> HashMap<PlayerId, ResponseMessage>;
+    ) -> HashMap<PlayerId, Option<ResponseMessage>>;
 
     /// Disconnect a player, typically happens when they die.
     fn disconnect_player(&mut self, player_id: &PlayerId);

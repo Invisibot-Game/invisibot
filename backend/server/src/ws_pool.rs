@@ -47,7 +47,14 @@ impl WsPoolManager {
         client.send_message(GameMessage::ClientHello);
 
         // TODO: Maybe not wait here, maybe we store them in the state and check back later.
-        let resp = client.receive_message::<ConnectResponse>();
+        let resp = match client.receive_message::<ConnectResponse>() {
+            Some(r) => r,
+            None => {
+                eprintln!("New client send invalid ConnectResponse message, aborting connection");
+                return;
+            }
+        };
+
         let game_id = resp.game_id;
 
         let (num_players, curr_players) = if let Some(setup) = self.games.get_mut(&game_id) {

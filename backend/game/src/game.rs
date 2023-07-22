@@ -83,7 +83,19 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
                         .collect(),
                 )));
 
-            let actions: HashMap<PlayerId, RoundResponse> = self.client_handler.receive_messages();
+            let actions: HashMap<PlayerId, RoundResponse> =
+                self.client_handler.receive_messages().into_iter().filter_map(|(player_id, response)| {
+                    match response {
+                        Some(r) => Some((player_id, r)),
+                        None => {
+                            eprintln!("An error occurred during the response for player {player_id}, they are now gone from the game");
+                            self.client_handler.broadcast_message(GameMessage::PlayerKilled(player_id));
+                            self.client_handler.broadcast_spectators(GameMessage::PlayerKilled(player_id));
+                            None                            
+                        }
+                    }
+                }
+            ).collect();
 
             let (new_state, dead_players) = state.run_round(actions)?;
             dead_players.into_iter().for_each(|id: u32| {

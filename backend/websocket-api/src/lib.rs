@@ -42,14 +42,21 @@ impl ClientHandler for WsHandler {
 
     fn receive_messages<ResponseMessage: DeserializeOwned>(
         &mut self,
-    ) -> HashMap<PlayerId, ResponseMessage> {
-        self.clients
+    ) -> HashMap<PlayerId, Option<ResponseMessage>> {
+        let messages: HashMap<PlayerId, Option<ResponseMessage>> = self
+            .clients
             .iter_mut()
             .map(|(id, client)| {
                 let response = client.receive_message();
                 (*id, response)
             })
-            .collect()
+            .collect();
+        messages
+            .iter()
+            .filter(|(_, response)| response.is_none())
+            .for_each(|(player_id, _)| self.disconnect_player(player_id));
+
+        messages
     }
 
     fn disconnect_player(&mut self, player_id: &PlayerId) {
@@ -120,21 +127,25 @@ impl WsClient {
         self.conn.write_message(Message::Text(text)).unwrap();
     }
 
-    pub fn receive_message<ResponseMessage: DeserializeOwned>(&mut self) -> ResponseMessage {
+    pub fn receive_message<ResponseMessage: DeserializeOwned>(
+        &mut self,
+    ) -> Option<ResponseMessage> {
         let response = self.conn.read_message().unwrap();
         let text_response = response
             .to_text()
             .expect("Failed to read text from response");
         match serde_json::from_str(text_response) {
-            Ok(m) => m,
+            Ok(m) => Some(m),
             Err(e) => {
                 eprintln!("Failed to parse message [{text_response}], got err {e}");
-                todo!("ERROR HANDLING");
+                self.close();
+                None
             }
         }
     }
 
     pub fn close(&mut self) {
+        println!("Closing WS connection");
         self.conn
             .close(None)
             .expect("Dammit, failed to disconnect player");
