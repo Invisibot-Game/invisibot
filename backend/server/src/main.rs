@@ -4,7 +4,6 @@ use api::games::{game_options, get_game, get_games, new_game};
 use api::maps::get_maps;
 use config::Config;
 use invisibot_postgres::{db_connection::DBConnection, postgres_handler::PostgresHandler};
-use rocket::fs::relative;
 use rocket::fs::FileServer;
 use rocket::{
     fairing::{Fairing, Info, Kind},
@@ -35,10 +34,7 @@ async fn rocket() -> _ {
     let postgres_handler = PostgresHandler::new(&database_connection);
 
     let mut rocket = rocket::build()
-        .mount(
-            "/api/maps",
-            FileServer::from(relative!("../resources/maps")),
-        )
+        .mount("/api/maps", FileServer::from(&config.map_dir))
         .mount(
             "/api",
             routes![get_game, new_game, get_games, get_maps, game_options],

@@ -26,7 +26,7 @@ services:
       ROCKET_ADDRESS: 0.0.0.0
       ROCKET_PORT: 8000
       WEBSOCKET_PORT: 4900
-      MAP_DIR: ./resources/maps/game_map_2.bmp
+      MAP_DIR: ./resources/maps/
       DEVELOPMENT_MODE: true
     volumes:
       - ./backend:/app
