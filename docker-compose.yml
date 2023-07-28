@@ -28,6 +28,7 @@ services:
       WEBSOCKET_PORT: 4900
       MAP_DIR: ./resources/maps/
       DEVELOPMENT_MODE: true
+      LOG_DB_STATEMENTS: false
     volumes:
       - ./backend:/app
       - /app/target

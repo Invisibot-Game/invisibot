@@ -24,7 +24,8 @@ mod ws_pool;
 async fn rocket() -> _ {
     let config = Config::new().expect("Failed to load config");
 
-    let database_connection = DBConnection::new(&config.database_url).await;
+    let database_connection =
+        DBConnection::new(&config.database_url, config.log_db_statements).await;
 
     let db_clone = database_connection.clone();
     let port = config.websocket_port;

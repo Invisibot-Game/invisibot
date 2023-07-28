@@ -1,4 +1,9 @@
-use sqlx::{postgres::PgPoolOptions, Pool, Postgres, Transaction};
+use std::str::FromStr;
+
+use sqlx::{
+    postgres::{PgConnectOptions, PgPoolOptions},
+    ConnectOptions, Pool, Postgres, Transaction,
+};
 
 use crate::{
     postgres_error::PostgresResult,
@@ -13,10 +18,17 @@ pub struct DBConnection {
 
 impl DBConnection {
     /// Setup a database connection and run migrations.
-    pub async fn new(database_url: &str) -> Self {
+    pub async fn new(database_url: &str, log_db_statements: bool) -> Self {
+        let mut pg_options =
+            PgConnectOptions::from_str(database_url).expect("Invalid database url provided");
+
+        if !log_db_statements {
+            pg_options.disable_statement_logging();
+        }
+
         let db_pool = PgPoolOptions::new()
             .max_connections(5)
-            .connect(database_url)
+            .connect_with(pg_options)
             .await
             .expect("Failed to connect to DB");
 

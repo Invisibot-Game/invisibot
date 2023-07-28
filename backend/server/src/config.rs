@@ -27,6 +27,7 @@ pub struct Config {
     pub map_dir: String,
     pub development_mode: bool,
     pub database_url: String,
+    pub log_db_statements: bool,
 }
 
 impl Config {
@@ -38,6 +39,7 @@ impl Config {
             map_dir: load_env_str("MAP_DIR")?,
             development_mode: load_env_bool("DEVELOPMENT_MODE")?,
             database_url: load_env_str("DATABASE_URL")?,
+            log_db_statements: load_env_bool("LOG_DB_STATEMENTS")?,
         })
     }
 }
