@@ -117,20 +117,29 @@ impl WsClient {
     }
 
     pub fn send_message(&mut self, message: GameMessage) {
-        let serialized = serde_json::to_string(&message).unwrap();
-        self.conn
-            .write_message(Message::text(serialized))
-            .expect("Failed to send message")
+        let serialized = serde_json::to_string(&message).expect("Failed to serialize message");
+        if let Err(e) = self.conn.write_message(Message::text(serialized)) {
+            eprintln!("Failed to send message to clients, err: {e}");
+        }
     }
 
     pub fn send_text(&mut self, text: String) {
-        self.conn.write_message(Message::Text(text)).unwrap();
+        if let Err(e) = self.conn.write_message(Message::Text(text)) {
+            eprintln!("Failed to send text message to clients, err: {e}");
+        }
     }
 
     pub fn receive_message<ResponseMessage: DeserializeOwned>(
         &mut self,
     ) -> Option<ResponseMessage> {
-        let response = self.conn.read_message().unwrap();
+        let response = match self.conn.read_message() {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("Failed to read message, error {e}");
+                return None;
+            }
+        };
+
         let text_response = response
             .to_text()
             .expect("Failed to read text from response");
