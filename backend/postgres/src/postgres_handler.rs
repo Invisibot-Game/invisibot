@@ -10,7 +10,10 @@ use sqlx::types::chrono::{DateTime, Utc};
 use crate::{
     db_connection::DBConnection,
     postgres_error::PostgresResult,
-    services::{get_game_service, new_game_service, round_service, update_game_service},
+    services::{
+        config_service, get_game_service, new_game_service, round_service, update_game_service,
+    },
+    tables::config::ConfigValue,
 };
 
 /// A persistence handler for postgres
@@ -112,6 +115,14 @@ impl PostgresHandler {
                 finished_at: g.finished_at,
             })
             .collect())
+    }
+
+    /// Get a u32 config value.
+    pub async fn get_config_u32(&self, config_name: &str) -> PostgresResult<u32> {
+        let value = config_service::get_config_entry(&self.connection, config_name).await?;
+        match value.value {
+            ConfigValue::U32(num) => Ok(num),
+        }
     }
 }
 

@@ -12,6 +12,9 @@ pub enum PostgresError {
     /// The game is not yet finished and cannot be retrieved until it is.
     #[error("Game not yet finished")]
     GameNotFinished,
+    /// Unable to parse config value from DB.
+    #[error("Invalid config value {0} for key {1}, expected type {2}, err: {3}")]
+    InvalidConfigType(String, String, String, String),
 }
 
 /// A result with a postgres error.

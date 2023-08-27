@@ -5,8 +5,10 @@ use std::collections::{HashMap, HashSet};
 
 use futures_util::{
     stream::{SplitSink, SplitStream},
-    SinkExt, StreamExt, TryStreamExt,
-};
+    SinkExt, StreamExt},
+use std::{
+    collections::{HashMap, HashSet},
+    net::TcpStream};
 use tokio::{net::TcpStream, runtime::Runtime};
 
 use invisibot_client_api::game_message::GameMessage;
@@ -181,11 +183,11 @@ impl WsClient {
         }
     }
 
-    pub async fn try_receive_message<ResponseMessage: DeserializeOwned>(
-        &mut self,
-    ) -> Option<ResponseMessage> {
-        self.incomming.poll_next_unpin(cx)
-    }
+    // pub async fn try_receive_message<ResponseMessage: DeserializeOwned>(
+    //     &mut self,
+    // ) -> Option<ResponseMessage> {
+    //     self.incomming.poll_next_unpin(cx)
+    // }
 
     pub async fn close(&mut self) {
         println!("Closing WS connection");

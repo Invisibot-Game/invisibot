@@ -2,6 +2,7 @@ use sqlx::{Pool, Postgres, Transaction};
 
 use crate::postgres_error::{PostgresError, PostgresResult};
 
+pub mod config_repository;
 pub mod game_repository;
 pub mod map_repository;
 pub mod map_wall_repository;

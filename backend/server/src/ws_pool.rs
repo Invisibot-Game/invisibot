@@ -1,5 +1,7 @@
-use std::{collections::HashMap, net::TcpListener};
+use std::{collections::HashMap, ops::Add};
+use tokio::net::TcpListener;
 
+use chrono::{DateTime, Duration, Utc};
 use invisibot_client_api::{
     connect_response::{ClientType, ConnectResponse},
     game_message::GameMessage,
@@ -10,26 +12,36 @@ use invisibot_postgres::postgres_handler::PostgresHandler;
 use invisibot_websocket_api::{WsClient, WsHandler};
 use tokio::task::{self, yield_now};
 
+const CLIENT_TIMEOUT_MILLIS_DEFAULT: u32 = 2000;
+const CLIENT_CONNECT_RESPONSE_TIMEOUT_MILLIS_CONFIG_KEY: &str =
+    "client_connect_response_timeout_millis";
+
 pub struct WsPoolManager {
     pg_handler: PostgresHandler,
     server: TcpListener,
     games: HashMap<GameId, GameSetup>,
+    new_connections: Vec<NewConnection>,
+}
+
+pub struct NewConnection {
+    timeout_at: DateTime<Utc>,
+    client: WsClient,
 }
 
 impl WsPoolManager {
-    pub fn init(pg_handler: PostgresHandler, websocket_port: u32) -> Self {
+    pub async fn init(pg_handler: PostgresHandler, websocket_port: u32) -> Self {
         let host = format!("0.0.0.0:{websocket_port}");
         println!("Setting up websocket connection on {host}");
 
-        let server = TcpListener::bind(host).expect("Failed to setup TCP listener");
-        server
-            .set_nonblocking(false)
-            .expect("Failed to set server to be non_blocking");
+        let server = TcpListener::bind(host)
+            .await
+            .expect("Failed to setup TCP listener");
 
         Self {
             pg_handler,
             server,
             games: HashMap::new(),
+            new_connections: vec![],
         }
     }
 
@@ -38,19 +50,45 @@ impl WsPoolManager {
         loop {
             self.handle_new_client().await;
             yield_now().await;
+            self.check_connections().await;
+            yield_now().await;
         }
     }
 
     async fn handle_new_client(&mut self) {
         let mut client = self.accept_client().await;
-
         client.send_message(GameMessage::ClientHello);
+        let millis = match self
+            .pg_handler
+            .get_config_u32(CLIENT_CONNECT_RESPONSE_TIMEOUT_MILLIS_CONFIG_KEY)
+            .await
+        {
+            Ok(millis) => millis,
+            Err(e) => {
+                eprintln!("Failed to retrieve client timeout value, defaulting to {CLIENT_TIMEOUT_MILLIS_DEFAULT} millis");
+                CLIENT_TIMEOUT_MILLIS_DEFAULT
+            }
+        };
+
+        let timeout_at = Utc::now().add(Duration::milliseconds(millis as i64));
+
+        self.new_connections
+            .push(NewConnection { timeout_at, client });
+        return;
+    }
+
+    async fn check_connections(&mut self) {
+        for conn in self.new_connections.iter() {}
+    }
+
+    async fn check_connection(&mut self, new_connection: &NewConnection) {
+        let client = &new_connection.client;
 
         // TODO: Maybe not wait here, maybe we store them in the state and check back later.
-        let resp = match client.receive_message::<ConnectResponse>() {
+        let resp = match client.receive_message::<ConnectResponse>().await {
             Some(r) => r,
             None => {
-                eprintln!("New client send invalid ConnectResponse message, aborting connection");
+                eprintln!("New client sent invalid ConnectResponse message, aborting connection");
                 return;
             }
         };
