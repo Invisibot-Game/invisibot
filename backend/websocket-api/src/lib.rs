@@ -1,10 +1,13 @@
 #![forbid(unsafe_code)]
 
 #[doc(hidden)]
-use std::{
-    collections::{HashMap, HashSet},
-    net::TcpStream,
+use std::collections::{HashMap, HashSet};
+
+use futures_util::{
+    stream::{SplitSink, SplitStream},
+    SinkExt, StreamExt, TryStreamExt,
 };
+use tokio::{net::TcpStream, runtime::Runtime};
 
 use invisibot_client_api::game_message::GameMessage;
 use invisibot_common::player_id::PlayerId;
@@ -12,32 +15,35 @@ use invisibot_game::client_handler::ClientHandler;
 #[doc(hidden)]
 use serde::de::DeserializeOwned;
 #[doc(hidden)]
-use tungstenite::{Message, WebSocket};
+use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 
 #[derive(Debug)]
 pub struct WsHandler {
     clients: HashMap<PlayerId, WsClient>,
     spectators: Vec<WsClient>,
+    rt: Runtime,
 }
 
 impl ClientHandler for WsHandler {
     fn broadcast_message(&mut self, message: GameMessage) {
         self.clients
             .iter_mut()
-            .for_each(|(_, client)| client.send_message(message.clone()))
+            .for_each(|(_, client)| self.rt.block_on(client.send_message(message.clone())))
     }
 
     fn broadcast_text(&mut self, message: String) {
         self.clients
             .iter_mut()
-            .for_each(|(_, client)| client.send_text(message.clone()))
+            .for_each(|(_, client)| self.rt.block_on(client.send_text(message.clone())))
     }
 
     fn send_message(&mut self, player_id: &PlayerId, message: GameMessage) {
-        self.clients
-            .get_mut(player_id)
-            .unwrap()
-            .send_message(message);
+        self.rt.block_on(
+            self.clients
+                .get_mut(player_id)
+                .unwrap()
+                .send_message(message),
+        );
     }
 
     fn receive_messages<ResponseMessage: DeserializeOwned>(
@@ -47,7 +53,7 @@ impl ClientHandler for WsHandler {
             .clients
             .iter_mut()
             .map(|(id, client)| {
-                let response = client.receive_message();
+                let response = self.rt.block_on(client.receive_message());
                 (*id, response)
             })
             .collect();
@@ -65,21 +71,23 @@ impl ClientHandler for WsHandler {
             .remove(player_id)
             .expect("Tried to disconnect nonexistant player");
 
-        p.close();
+        self.rt.block_on(p.close());
     }
 
     fn close(&mut self) {
         self.clients
             .iter_mut()
-            .for_each(|(_, client)| client.close());
+            .for_each(|(_, client)| self.rt.block_on(client.close()));
 
-        self.spectators.iter_mut().for_each(|client| client.close());
+        self.spectators
+            .iter_mut()
+            .for_each(|client| self.rt.block_on(client.close()));
     }
 
     fn broadcast_spectators(&mut self, message: GameMessage) {
         self.spectators
             .iter_mut()
-            .for_each(|client| client.send_message(message.clone()));
+            .for_each(|client| self.rt.block_on(client.send_message(message.clone())));
     }
 }
 
@@ -90,6 +98,11 @@ impl WsHandler {
     }
 
     pub fn new_with_players(players: Vec<WsClient>, spectators: Vec<WsClient>) -> Self {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("Failed to get a reference to the current runtime");
+
         Self {
             clients: players
                 .into_iter()
@@ -97,6 +110,7 @@ impl WsHandler {
                 .map(|(id, client)| (id as PlayerId, client))
                 .collect(),
             spectators,
+            rt,
         }
     }
 
@@ -107,35 +121,49 @@ impl WsHandler {
 
 #[derive(Debug)]
 pub struct WsClient {
-    conn: WebSocket<TcpStream>,
+    incomming: SplitStream<WebSocketStream<TcpStream>>,
+    outgoing: SplitSink<WebSocketStream<TcpStream>, Message>,
 }
 
 impl WsClient {
-    pub fn accept(stream: TcpStream) -> Self {
-        let ws = tungstenite::accept(stream).expect("Failed to initiate websocket");
-        Self { conn: ws }
+    pub async fn accept(stream: TcpStream) -> Self {
+        let ws = tokio_tungstenite::accept_async(stream)
+            .await
+            .expect("Failed to initiate websocket");
+
+        let (outgoing, incomming) = ws.split();
+
+        Self {
+            incomming,
+            outgoing,
+        }
     }
 
-    pub fn send_message(&mut self, message: GameMessage) {
+    pub async fn send_message(&mut self, message: GameMessage) {
         let serialized = serde_json::to_string(&message).expect("Failed to serialize message");
-        if let Err(e) = self.conn.write_message(Message::text(serialized)) {
+
+        if let Err(e) = self.outgoing.send(Message::text(serialized)).await {
             eprintln!("Failed to send message to clients, err: {e}");
         }
     }
 
-    pub fn send_text(&mut self, text: String) {
-        if let Err(e) = self.conn.write_message(Message::Text(text)) {
+    pub async fn send_text(&mut self, text: String) {
+        if let Err(e) = self.outgoing.send(Message::Text(text)).await {
             eprintln!("Failed to send text message to clients, err: {e}");
         }
     }
 
-    pub fn receive_message<ResponseMessage: DeserializeOwned>(
+    pub async fn receive_message<ResponseMessage: DeserializeOwned>(
         &mut self,
     ) -> Option<ResponseMessage> {
-        let response = match self.conn.read_message() {
-            Ok(r) => r,
-            Err(e) => {
-                eprintln!("Failed to read message, error {e}");
+        let response = match self.incomming.next().await {
+            None => {
+                eprintln!("Got empty from 'next'?");
+                return None;
+            }
+            Some(Ok(mess)) => mess,
+            Some(Err(e)) => {
+                eprintln!("Failed to read message, error: {e}");
                 return None;
             }
         };
@@ -147,17 +175,24 @@ impl WsClient {
             Ok(m) => Some(m),
             Err(e) => {
                 eprintln!("Failed to parse message [{text_response}], got err {e}");
-                self.close();
+                self.close().await;
                 None
             }
         }
     }
 
-    pub fn close(&mut self) {
+    pub async fn try_receive_message<ResponseMessage: DeserializeOwned>(
+        &mut self,
+    ) -> Option<ResponseMessage> {
+        self.incomming.poll_next_unpin(cx)
+    }
+
+    pub async fn close(&mut self) {
         println!("Closing WS connection");
 
-        if self.conn.can_write() {
-            self.conn.close(None).expect("Failed to disconnect player");
-        }
+        self.outgoing
+            .close()
+            .await
+            .expect("Failed to close websocket stream");
     }
 }
