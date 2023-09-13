@@ -22,7 +22,7 @@ RETURNING id, game_id, width, height
         width as i32,
         height as i32,
     )
-    .fetch_one(transaction)
+    .fetch_one(&mut **transaction)
     .await?)
 }
 
@@ -39,6 +39,6 @@ WHERE game_id = $1
         "#,
         game_id
     )
-    .fetch_one(transaction)
+    .fetch_one(&mut **transaction)
     .await?)
 }

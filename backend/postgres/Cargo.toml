@@ -5,14 +5,13 @@ edition = "2021"
 workspace = ".."
 
 [dependencies]
-sqlx = { version = "0.6", features = [
+sqlx = { version = "0.7", features = [
     "runtime-async-std-rustls",
     "postgres",
     "macros",
     "migrate",
     "chrono",
     "uuid",
-    "offline",
 ] }
 thiserror = "1.0"
 

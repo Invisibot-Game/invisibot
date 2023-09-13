@@ -21,7 +21,7 @@ RETURNING map_id, x, y
         coordinate.x as i32,
         coordinate.y as i32,
     )
-    .fetch_one(transaction)
+    .fetch_one(&mut **transaction)
     .await?)
 }
 
@@ -38,6 +38,6 @@ WHERE map_id = $1
         "#,
         map_id
     )
-    .fetch_all(transaction)
+    .fetch_all(&mut **transaction)
     .await?)
 }

@@ -23,7 +23,7 @@ RETURNING game_id, round_number, x, y
         coordinate.x as i32,
         coordinate.y as i32,
     )
-    .fetch_one(transaction)
+    .fetch_one(&mut **transaction)
     .await?)
 }
 
@@ -42,6 +42,6 @@ WHERE game_id = $1 AND round_number = $2
         game_id,
         round_number
     )
-    .fetch_all(transaction)
+    .fetch_all(&mut **transaction)
     .await?)
 }

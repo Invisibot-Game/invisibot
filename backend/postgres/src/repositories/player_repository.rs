@@ -29,7 +29,7 @@ RETURNING id, game_id, round_number, x, y, rotation, visible
         rotation.to_string().to_lowercase(),
         visible,
     )
-    .fetch_one(transaction)
+    .fetch_one(&mut **transaction)
     .await?)
 }
 
@@ -48,6 +48,6 @@ WHERE game_id = $1 AND round_number = $2
         game_id,
         round_number
     )
-    .fetch_all(transaction)
+    .fetch_all(&mut **transaction)
     .await?)
 }

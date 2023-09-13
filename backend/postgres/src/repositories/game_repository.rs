@@ -22,7 +22,7 @@ RETURNING id, created_at, started_at, finished_at, num_players, max_num_rounds, 
         num_rounds as i32,
         map_dir
     )
-    .fetch_one(transaction)
+    .fetch_one(&mut **transaction)
     .await?)
 }
 
@@ -39,7 +39,7 @@ WHERE id = $1
         "#,
         game_id
     )
-    .fetch_one(transaction)
+    .fetch_one(&mut **transaction)
     .await?)
 }
 
@@ -56,7 +56,7 @@ WHERE id = $1
         "#,
         game_id
     )
-    .fetch_optional(transaction)
+    .fetch_optional(&mut **transaction)
     .await?)
 }
 
@@ -68,7 +68,7 @@ SELECT id, created_at, started_at, finished_at, num_players, max_num_rounds, map
 FROM game
         "#
     )
-    .fetch_all(transaction)
+    .fetch_all(&mut **transaction)
     .await?)
 }
 
@@ -85,7 +85,7 @@ WHERE id = $1
     "#,
         game_id
     )
-    .execute(transaction)
+    .execute(&mut **transaction)
     .await?;
     Ok(())
 }
@@ -103,7 +103,7 @@ WHERE id = $1
     "#,
         game_id
     )
-    .execute(transaction)
+    .execute(&mut **transaction)
     .await?;
     Ok(())
 }

@@ -23,7 +23,7 @@ impl DBConnection {
             PgConnectOptions::from_str(database_url).expect("Invalid database url provided");
 
         if !log_db_statements {
-            pg_options.disable_statement_logging();
+            pg_options = pg_options.disable_statement_logging();
         }
 
         let db_pool = PgPoolOptions::new()
