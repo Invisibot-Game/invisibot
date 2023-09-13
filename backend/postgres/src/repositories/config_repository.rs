@@ -13,10 +13,11 @@ pub async fn get_config(
         r#"
 SELECT config_name, config_value, config_type
 FROM config
+
 WHERE config_name = $1
         "#,
         key
     )
-    .fetch_one(transaction)
+    .fetch_one(&mut **transaction)
     .await?)
 }

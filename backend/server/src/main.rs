@@ -68,7 +68,7 @@ impl Fairing for Cors {
 }
 
 async fn start_ws_pool(database_connection: DBConnection, port: u32) {
-    let ws_pool = WsPoolManager::init(PostgresHandler::new(&database_connection), port);
+    let ws_pool = WsPoolManager::init(PostgresHandler::new(&database_connection), port).await;
     println!("Starting WS_POOL");
     ws_pool.start().await
 }

@@ -1,21 +1,17 @@
 #![forbid(unsafe_code)]
 
 #[doc(hidden)]
-use std::collections::{HashMap, HashSet};
-
 use futures_util::{
     stream::{SplitSink, SplitStream},
-    SinkExt, StreamExt},
-use std::{
-    collections::{HashMap, HashSet},
-    net::TcpStream};
-use tokio::{net::TcpStream, runtime::Runtime};
-
+    SinkExt, StreamExt,
+};
 use invisibot_client_api::game_message::GameMessage;
 use invisibot_common::player_id::PlayerId;
 use invisibot_game::client_handler::ClientHandler;
 #[doc(hidden)]
 use serde::de::DeserializeOwned;
+use std::collections::{HashMap, HashSet};
+use tokio::{net::TcpStream, runtime::Runtime};
 #[doc(hidden)]
 use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 
