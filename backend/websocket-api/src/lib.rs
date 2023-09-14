@@ -119,7 +119,7 @@ impl WsHandler {
 
 #[derive(Debug)]
 pub struct WsClient {
-    incomming: SplitStream<WebSocketStream<TcpStream>>,
+    incoming: SplitStream<WebSocketStream<TcpStream>>,
     outgoing: SplitSink<WebSocketStream<TcpStream>, Message>,
 }
 
@@ -129,12 +129,9 @@ impl WsClient {
             .await
             .expect("Failed to initiate websocket");
 
-        let (outgoing, incomming) = ws.split();
+        let (outgoing, incoming) = ws.split();
 
-        Self {
-            incomming,
-            outgoing,
-        }
+        Self { incoming, outgoing }
     }
 
     pub async fn send_message(&mut self, message: GameMessage) {
@@ -154,7 +151,7 @@ impl WsClient {
     pub async fn receive_message<ResponseMessage: DeserializeOwned>(
         &mut self,
     ) -> Option<ResponseMessage> {
-        let response = match self.incomming.next().await {
+        let message = match self.incoming.next().await {
             None => {
                 eprintln!("Got empty from 'next'?");
                 return None;
@@ -166,7 +163,28 @@ impl WsClient {
             }
         };
 
-        let text_response = response
+        self.parse_message(message).await
+    }
+
+    pub async fn try_receive_message<ResponseMessage: DeserializeOwned>(
+        &mut self,
+    ) -> Option<ResponseMessage> {
+        let message = match self.incoming.next().await? {
+            Ok(m) => m,
+            Err(e) => {
+                eprintln!("Failed to read message, error: {e}");
+                return None;
+            }
+        };
+
+        self.parse_message(message).await
+    }
+
+    async fn parse_message<ResponseMessage: DeserializeOwned>(
+        &mut self,
+        message: Message,
+    ) -> Option<ResponseMessage> {
+        let text_response = message
             .to_text()
             .expect("Failed to read text from response");
         match serde_json::from_str(text_response) {
@@ -178,12 +196,6 @@ impl WsClient {
             }
         }
     }
-
-    // pub async fn try_receive_message<ResponseMessage: DeserializeOwned>(
-    //     &mut self,
-    // ) -> Option<ResponseMessage> {
-    //     self.incomming.poll_next_unpin(cx)
-    // }
 
     pub async fn close(&mut self) {
         println!("Closing WS connection");

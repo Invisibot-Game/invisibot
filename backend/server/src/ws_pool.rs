@@ -1,4 +1,10 @@
-use std::{collections::HashMap, ops::Add};
+use futures::task::{waker, ArcWake};
+use std::{
+    collections::HashMap,
+    ops::Add,
+    sync::Arc,
+    task::{Context, Poll},
+};
 use tokio::net::TcpListener;
 
 use chrono::{DateTime, Duration, Utc};
@@ -48,16 +54,55 @@ impl WsPoolManager {
     pub async fn start(mut self) {
         println!("Websocket pool starting up");
         loop {
+            // Check if anyone is looking to join.
             self.handle_new_client().await;
             yield_now().await;
+            // Handle those who have connected but not yet identified themselves.
             self.check_connections().await;
             yield_now().await;
         }
     }
 
     async fn handle_new_client(&mut self) {
-        let mut client = self.accept_client().await;
-        client.send_message(GameMessage::ClientHello);
+        let mut client = match self.accept_client().await {
+            Some(c) => c,
+            None => return,
+        };
+        // let mut client = self.accept_client().await;
+        client.send_message(GameMessage::ClientHello).await;
+        let timeout_at = self.timeout_at().await;
+
+        self.new_connections
+            .push(NewConnection { timeout_at, client });
+    }
+
+    async fn accept_client(&self) -> Option<WsClient> {
+        println!("Accept client");
+
+        // match self.server.accept().await {
+        //     Ok((stream, _)) => {
+        //         println!("Client connecting!");
+        //         WsClient::accept(stream).await
+        //     }
+        //     Err(err) => {
+        //         panic!("An unexpected error occurred whilst listening for clients, err {err}")
+        //     }
+        // }
+
+        let w = waker(Arc::new(NoopWaker {}));
+        match self.server.poll_accept(&mut Context::from_waker(&w)) {
+            Poll::Pending => None,
+            Poll::Ready(Ok((stream, _))) => {
+                println!("Client connecting!");
+                Some(WsClient::accept(stream).await)
+            }
+            Poll::Ready(Err(e)) => {
+                panic!("An unexpected error occurred whilst listening for clients, err {e}")
+            }
+        }
+    }
+
+    async fn timeout_at(&mut self) -> DateTime<Utc> {
         let millis = match self
             .pg_handler
             .get_config_u32(CLIENT_CONNECT_RESPONSE_TIMEOUT_MILLIS_CONFIG_KEY)
@@ -65,39 +110,60 @@ impl WsPoolManager {
         {
             Ok(millis) => millis,
             Err(e) => {
-                eprintln!("Failed to retrieve client timeout value, defaulting to {CLIENT_TIMEOUT_MILLIS_DEFAULT} millis");
+                eprintln!("Failed to retrieve client timeout value, defaulting to {CLIENT_TIMEOUT_MILLIS_DEFAULT} millis (error: {e:?})");
                 CLIENT_TIMEOUT_MILLIS_DEFAULT
             }
         };
 
-        let timeout_at = Utc::now().add(Duration::milliseconds(millis as i64));
-
-        self.new_connections
-            .push(NewConnection { timeout_at, client });
-        return;
+        Utc::now().add(Duration::milliseconds(millis as i64))
     }
 
     async fn check_connections(&mut self) {
-        for conn in self.new_connections.iter() {}
+        let mut timed_out = vec![];
+        let mut client_messages = HashMap::new();
+
+        let curr_time = Utc::now();
+        for (index, conn) in self.new_connections.iter_mut().enumerate() {
+            let message: ConnectResponse = match conn.client.try_receive_message().await {
+                Some(m) => m,
+                None => {
+                    // We didn't get an answer, check if their time is up.
+                    if curr_time > conn.timeout_at {
+                        timed_out.push(index);
+                    }
+
+                    continue;
+                }
+            };
+
+            client_messages.insert(index, message);
+        }
+
+        for index in timed_out.into_iter() {
+            let mut conn = self.new_connections.remove(index);
+            conn.client
+                .send_text(String::from("Timeout waiting for connection response"))
+                .await;
+            conn.client.close().await;
+        }
+
+        for (index, connect_response) in client_messages.into_iter() {
+            let conn = self.new_connections.remove(index);
+            self.handle_new_client_response(conn.client, connect_response)
+                .await;
+        }
     }
 
-    async fn check_connection(&mut self, new_connection: &NewConnection) {
-        let client = &new_connection.client;
-
-        // TODO: Maybe not wait here, maybe we store them in the state and check back later.
-        let resp = match client.receive_message::<ConnectResponse>().await {
-            Some(r) => r,
-            None => {
-                eprintln!("New client sent invalid ConnectResponse message, aborting connection");
-                return;
-            }
-        };
-
-        let game_id = resp.game_id;
+    async fn handle_new_client_response(
+        &mut self,
+        mut client: WsClient,
+        connect_response: ConnectResponse,
+    ) {
+        let game_id = connect_response.game_id;
 
         let (num_players, curr_players) = if let Some(setup) = self.games.get_mut(&game_id) {
             // Add them to an existing game
-            match resp.client_type {
+            match connect_response.client_type {
                 ClientType::Player => {
                     setup.curr_players.push(client);
                 }
@@ -111,24 +177,26 @@ impl WsPoolManager {
                 Ok(g) => g,
                 Err(e) => {
                     println!("Failed to retrieve game from database, err: {e}");
-                    client.send_message(GameMessage::ServerError(
-                        "Failed to retrieve game".to_string(),
-                    ));
+                    client
+                        .send_message(GameMessage::ServerError(
+                            "Failed to retrieve game".to_string(),
+                        ))
+                        .await;
                     return;
                 }
             };
 
             if let Some(game) = game {
                 if game.started_at.is_some() {
-                    client.send_message(GameMessage::GameStarted);
-                    client.close();
+                    client.send_message(GameMessage::GameStarted).await;
+                    client.close().await;
                     return;
                 }
 
                 let mut players = vec![];
                 let mut spectators = vec![];
 
-                match resp.client_type {
+                match connect_response.client_type {
                     ClientType::Player => {
                         players.push(client);
                     }
@@ -138,7 +206,7 @@ impl WsPoolManager {
                 }
 
                 self.games.insert(
-                    resp.game_id,
+                    connect_response.game_id,
                     GameSetup {
                         max_players: game.num_players,
                         curr_players: players,
@@ -149,8 +217,10 @@ impl WsPoolManager {
                 (game.num_players as usize, 1)
             } else {
                 // Inform the client that there is no such game.
-                client.send_message(GameMessage::GameNotFound(game_id));
-                client.close();
+                client
+                    .send_message(GameMessage::GameNotFound(game_id))
+                    .await;
+                client.close().await;
                 return;
             }
         };
@@ -161,23 +231,12 @@ impl WsPoolManager {
             let mut setup = self.games.remove(&game_id).unwrap(); // Should always exist here
             if let Err(e) = self.pg_handler.set_game_started(game_id).await {
                 println!("Failed to set game as started, err: {e}");
-                setup.abort_game("Failed to start game");
+                setup.abort_game("Failed to start game").await;
                 return;
             }
 
             let game_pg_handler = self.pg_handler.clone();
             task::spawn(play_game(game_id, setup, game_pg_handler));
-        }
-    }
-
-    async fn accept_client(&self) -> WsClient {
-        println!("Accept client");
-        match self.server.accept() {
-            Ok((stream, _)) => {
-                println!("Client connecting!");
-                WsClient::accept(stream)
-            }
-            Err(e) => panic!("An unexpected error occurred whilst listening for clients, err {e}"),
         }
     }
 }
@@ -202,10 +261,18 @@ struct GameSetup {
 }
 
 impl GameSetup {
-    fn abort_game(&mut self, message: &str) {
-        self.curr_players.iter_mut().for_each(|c| {
-            c.send_message(GameMessage::ServerError(message.to_string()));
-            c.close();
-        })
+    async fn abort_game(&mut self, message: &str) {
+        for client in self.curr_players.iter_mut() {
+            client
+                .send_message(GameMessage::ServerError(message.to_string()))
+                .await;
+            client.close().await;
+        }
     }
+}
+
+struct NoopWaker {}
+
+impl ArcWake for NoopWaker {
+    fn wake_by_ref(_: &std::sync::Arc<Self>) {}
 }
