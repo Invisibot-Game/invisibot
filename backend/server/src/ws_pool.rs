@@ -1,11 +1,5 @@
-use futures::task::{waker, ArcWake};
-use std::{
-    collections::HashMap,
-    ops::Add,
-    sync::Arc,
-    task::{Context, Poll},
-};
-use tokio::net::TcpListener;
+use std::{collections::HashMap, ops::Add};
+use tokio::{net::TcpListener, select};
 
 use chrono::{DateTime, Duration, Utc};
 use invisibot_client_api::{
@@ -34,6 +28,17 @@ pub struct NewConnection {
     client: WsClient,
 }
 
+enum NewConnectionResult {
+    TimedOut {
+        index: usize,
+    },
+    Responded {
+        index: usize,
+        response: ConnectResponse,
+    },
+    Nothing,
+}
+
 impl WsPoolManager {
     pub async fn init(pg_handler: PostgresHandler, websocket_port: u32) -> Self {
         let host = format!("0.0.0.0:{websocket_port}");
@@ -54,51 +59,47 @@ impl WsPoolManager {
     pub async fn start(mut self) {
         println!("Websocket pool starting up");
         loop {
-            // Check if anyone is looking to join.
-            self.handle_new_client().await;
-            yield_now().await;
-            // Handle those who have connected but not yet identified themselves.
-            self.check_connections().await;
-            yield_now().await;
-        }
-    }
+            let server = &self.server;
+            let new_connections = &mut self.new_connections;
+            select! {
+                conn = server.accept() => {
+                    let mut client = match conn {
+                        Ok((stream, _)) => {
+                            println!("Client connecting!");
+                            WsClient::accept(stream).await
+                        }
+                        Err(e) => {
+                            panic!("An unexpected error occurred whilst listening for clients, err {e}")
+                        }
+                    };
 
-    async fn handle_new_client(&mut self) {
-        let mut client = match self.accept_client().await {
-            Some(c) => c,
-            None => return,
-        };
-        // let mut client = self.accept_client().await;
-        client.send_message(GameMessage::ClientHello).await;
-        let timeout_at = self.timeout_at().await;
+                    // let mut client = self.accept_client().await;
+                    client.send_message(GameMessage::ClientHello).await;
+                    let timeout_at = self.timeout_at().await;
 
-        self.new_connections
-            .push(NewConnection { timeout_at, client });
-    }
-
-    async fn accept_client(&self) -> Option<WsClient> {
-        println!("Accept client");
-
-        // match self.server.accept().await {
-        //     Ok((stream, _)) => {
-        //         println!("Client connecting!");
-        //         WsClient::accept(stream).await
-        //     }
-        //     Err(err) => {
-        //         panic!("An unexpected error occurred whilst listening for clients, err {err}")
-        //     }
-        // }
-
-        let w = waker(Arc::new(NoopWaker {}));
-        match self.server.poll_accept(&mut Context::from_waker(&w)) {
-            Poll::Pending => None,
-            Poll::Ready(Ok((stream, _))) => {
-                println!("Client connecting!");
-                Some(WsClient::accept(stream).await)
+                    self.new_connections
+                        .push(NewConnection { timeout_at, client });
+                }
+                result = check_new_connections(new_connections) => {
+                    match result {
+                        NewConnectionResult::Nothing => {},
+                        NewConnectionResult::Responded { index, response } => {
+                            let conn = self.new_connections.remove(index);
+                            self.handle_new_client_response(conn.client, response)
+                                .await;
+                        }
+                        NewConnectionResult::TimedOut { index } => {
+                            let mut conn = self.new_connections.remove(index);
+                            conn.client
+                                .send_text(String::from("Timeout waiting for connection response"))
+                                .await;
+                            conn.client.close().await;
+                        }
+                    }
+                }
             }
-            Poll::Ready(Err(e)) => {
-                panic!("An unexpected error occurred whilst listening for clients, err {e}")
-            }
+
+            yield_now().await;
         }
     }
 
@@ -116,42 +117,6 @@ impl WsPoolManager {
         };
 
         Utc::now().add(Duration::milliseconds(millis as i64))
-    }
-
-    async fn check_connections(&mut self) {
-        let mut timed_out = vec![];
-        let mut client_messages = HashMap::new();
-
-        let curr_time = Utc::now();
-        for (index, conn) in self.new_connections.iter_mut().enumerate() {
-            let message: ConnectResponse = match conn.client.try_receive_message().await {
-                Some(m) => m,
-                None => {
-                    // We didn't get an answer, check if their time is up.
-                    if curr_time > conn.timeout_at {
-                        timed_out.push(index);
-                    }
-
-                    continue;
-                }
-            };
-
-            client_messages.insert(index, message);
-        }
-
-        for index in timed_out.into_iter() {
-            let mut conn = self.new_connections.remove(index);
-            conn.client
-                .send_text(String::from("Timeout waiting for connection response"))
-                .await;
-            conn.client.close().await;
-        }
-
-        for (index, connect_response) in client_messages.into_iter() {
-            let conn = self.new_connections.remove(index);
-            self.handle_new_client_response(conn.client, connect_response)
-                .await;
-        }
     }
 
     async fn handle_new_client_response(
@@ -271,8 +236,19 @@ impl GameSetup {
     }
 }
 
-struct NoopWaker {}
+async fn check_new_connections(new_connections: &mut Vec<NewConnection>) -> NewConnectionResult {
+    let now = Utc::now();
+    for (index, conn) in new_connections.iter_mut().enumerate() {
+        match conn.client.try_receive_message().await {
+            Some(m) => return NewConnectionResult::Responded { index, response: m },
+            None => {
+                if conn.timeout_at < now {
+                    return NewConnectionResult::TimedOut { index };
+                }
+                continue;
+            }
+        };
+    }
 
-impl ArcWake for NoopWaker {
-    fn wake_by_ref(_: &std::sync::Arc<Self>) {}
+    NewConnectionResult::Nothing
 }

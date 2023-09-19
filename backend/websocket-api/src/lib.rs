@@ -166,6 +166,7 @@ impl WsClient {
         self.parse_message(message).await
     }
 
+    /// Cancelation safe
     pub async fn try_receive_message<ResponseMessage: DeserializeOwned>(
         &mut self,
     ) -> Option<ResponseMessage> {
@@ -180,6 +181,7 @@ impl WsClient {
         self.parse_message(message).await
     }
 
+    /// Cancelation safe
     async fn parse_message<ResponseMessage: DeserializeOwned>(
         &mut self,
         message: Message,
