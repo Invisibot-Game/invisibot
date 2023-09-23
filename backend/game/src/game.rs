@@ -53,23 +53,26 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
         let mut state: GameState = self.initial_state.clone();
 
         for round_number in 0..(self.config.num_rounds - 1) {
-            state.players.iter().for_each(|(p_id, _)| {
-                self.client_handler.send_message(
-                    p_id,
-                    GameMessage::GameRound(GameRound::new(
-                        state.map.width,
-                        state.map.height,
-                        state.map.get_wall_coords(),
-                        state
-                            .players
-                            .iter()
-                            .filter(|&(id, p)| p_id == id || p.is_visible())
-                            .map(|(id, p)| (*id, p.get_pos().clone()))
-                            .collect(),
-                        *p_id,
-                    )),
-                );
-            });
+            for (player_id, _) in state.players.iter() {
+                self.client_handler
+                    .send_message(
+                        player_id,
+                        GameMessage::GameRound(GameRound::new(
+                            state.map.width,
+                            state.map.height,
+                            state.map.get_wall_coords(),
+                            state
+                                .players
+                                .iter()
+                                .filter(|&(id, p)| player_id == id || p.is_visible())
+                                .map(|(id, p)| (*id, p.get_pos().clone()))
+                                .collect(),
+                            *player_id,
+                        )),
+                    )
+                    .await;
+            }
+
             self.client_handler
                 .broadcast_spectators(GameMessage::GameRoundSpectators(SpectatorRound::new(
                     state.map.width,
@@ -81,30 +84,21 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
                         .filter(|&(_, p)| p.is_visible())
                         .map(|(id, p)| (*id, p.get_pos().clone()))
                         .collect(),
-                )));
+                )))
+                .await;
 
-            let actions: HashMap<PlayerId, RoundResponse> =
-                self.client_handler.receive_messages().into_iter().filter_map(|(player_id, response)| {
-                    match response {
-                        Some(r) => Some((player_id, r)),
-                        None => {
-                            eprintln!("An error occurred during the response for player {player_id}, they are now gone from the game");
-                            self.client_handler.broadcast_message(GameMessage::PlayerKilled(player_id));
-                            self.client_handler.broadcast_spectators(GameMessage::PlayerKilled(player_id));
-                            None
-                        }
-                    }
-                }
-            ).collect();
+            let actions: HashMap<PlayerId, RoundResponse> = self.get_actions().await;
 
             let (new_state, dead_players) = state.run_round(actions)?;
-            dead_players.into_iter().for_each(|id: u32| {
+            for id in dead_players.into_iter() {
                 self.client_handler
-                    .broadcast_message(GameMessage::PlayerKilled(id));
+                    .broadcast_message(GameMessage::PlayerKilled(id))
+                    .await;
                 self.client_handler
-                    .broadcast_spectators(GameMessage::PlayerKilled(id));
-                self.client_handler.disconnect_player(&id);
-            });
+                    .broadcast_spectators(GameMessage::PlayerKilled(id))
+                    .await;
+                self.client_handler.disconnect_player(&id).await;
+            }
 
             self.persistence_handler
                 .save_round(
@@ -133,9 +127,11 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
                         .unwrap() // We just validated that there were a player left.
                         .get_id();
                     self.client_handler
-                        .send_message(&winning_player, GameMessage::PlayerWon(winning_player));
+                        .send_message(&winning_player, GameMessage::PlayerWon(winning_player))
+                        .await;
                     self.client_handler
-                        .broadcast_spectators(GameMessage::PlayerWon(winning_player));
+                        .broadcast_spectators(GameMessage::PlayerWon(winning_player))
+                        .await;
 
                     break;
                 }
@@ -144,8 +140,9 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
         }
 
         self.client_handler
-            .broadcast_message(GameMessage::ClientGoodbye("Bye".to_string()));
-        self.client_handler.close();
+            .broadcast_message(GameMessage::ClientGoodbye("Bye".to_string()))
+            .await;
+        self.client_handler.close().await;
         self.game_rounds = states;
 
         self.persistence_handler.game_done(self.game_id).await?;
@@ -164,7 +161,30 @@ impl<C: ClientHandler, P: PersistenceHandler> Game<C, P> {
     }
 
     /// Cleanup after this game.
-    pub fn cleanup(&mut self) {
-        self.client_handler.close();
+    pub async fn cleanup(&mut self) {
+        self.client_handler.close().await;
+    }
+
+    async fn get_actions(&mut self) -> HashMap<PlayerId, RoundResponse> {
+        let mut actions: HashMap<PlayerId, RoundResponse> = HashMap::new();
+        for (player_id, response) in self.client_handler.receive_messages().await.into_iter() {
+            match response {
+                Some(action) => {
+                    actions.insert(player_id, action);
+                }
+                None => {
+                    eprintln!("An error occurred during the response for player {player_id}, they are now gone from the game");
+                    self.client_handler.disconnect_player(&player_id).await;
+                    self.client_handler
+                        .broadcast_message(GameMessage::PlayerKilled(player_id))
+                        .await;
+                    self.client_handler
+                        .broadcast_spectators(GameMessage::PlayerKilled(player_id))
+                        .await;
+                }
+            }
+        }
+
+        actions
     }
 }

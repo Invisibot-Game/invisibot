@@ -7,11 +7,14 @@ use futures_util::{
 };
 use invisibot_client_api::game_message::GameMessage;
 use invisibot_common::player_id::PlayerId;
-use invisibot_game::client_handler::ClientHandler;
+use invisibot_game::{async_trait::async_trait, client_handler::ClientHandler};
 #[doc(hidden)]
 use serde::de::DeserializeOwned;
-use std::collections::{HashMap, HashSet};
-use tokio::{net::TcpStream, runtime::Runtime};
+use std::{
+    collections::{HashMap, HashSet},
+    time::Duration,
+};
+use tokio::{net::TcpStream, time::Instant};
 #[doc(hidden)]
 use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 
@@ -19,73 +22,67 @@ use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 pub struct WsHandler {
     clients: HashMap<PlayerId, WsClient>,
     spectators: Vec<WsClient>,
-    rt: Runtime,
 }
 
+const DEFAULT_CLIENT_TIMEOUT_MILLIS: u64 = 400;
+
+#[async_trait]
 impl ClientHandler for WsHandler {
-    fn broadcast_message(&mut self, message: GameMessage) {
+    async fn broadcast_message(&mut self, message: GameMessage) {
+        for (_, client) in self.clients.iter_mut() {
+            client.send_message(message.clone()).await;
+        }
+    }
+
+    async fn broadcast_text(&mut self, message: String) {
+        for (_, client) in self.clients.iter_mut() {
+            client.send_text(message.clone()).await;
+        }
+    }
+
+    async fn send_message(&mut self, player_id: &PlayerId, message: GameMessage) {
         self.clients
-            .iter_mut()
-            .for_each(|(_, client)| self.rt.block_on(client.send_message(message.clone())))
+            .get_mut(player_id)
+            .unwrap()
+            .send_message(message)
+            .await;
     }
 
-    fn broadcast_text(&mut self, message: String) {
-        self.clients
-            .iter_mut()
-            .for_each(|(_, client)| self.rt.block_on(client.send_text(message.clone())))
-    }
-
-    fn send_message(&mut self, player_id: &PlayerId, message: GameMessage) {
-        self.rt.block_on(
-            self.clients
-                .get_mut(player_id)
-                .unwrap()
-                .send_message(message),
-        );
-    }
-
-    fn receive_messages<ResponseMessage: DeserializeOwned>(
+    async fn receive_messages<ResponseMessage: DeserializeOwned + Send>(
         &mut self,
     ) -> HashMap<PlayerId, Option<ResponseMessage>> {
-        let messages: HashMap<PlayerId, Option<ResponseMessage>> = self
-            .clients
-            .iter_mut()
-            .map(|(id, client)| {
-                let response = self.rt.block_on(client.receive_message());
-                (*id, response)
-            })
-            .collect();
-        messages
-            .iter()
-            .filter(|(_, response)| response.is_none())
-            .for_each(|(player_id, _)| self.disconnect_player(player_id));
-
-        messages
+        futures::future::join_all(self.clients.iter_mut().map(|(id, client)| async {
+            let response = client.receive_message(DEFAULT_CLIENT_TIMEOUT_MILLIS).await;
+            (*id, response)
+        }))
+        .await
+        .into_iter()
+        .collect()
     }
 
-    fn disconnect_player(&mut self, player_id: &PlayerId) {
+    async fn disconnect_player(&mut self, player_id: &PlayerId) {
         let mut p = self
             .clients
             .remove(player_id)
             .expect("Tried to disconnect nonexistant player");
 
-        self.rt.block_on(p.close());
+        p.close().await;
     }
 
-    fn close(&mut self) {
-        self.clients
-            .iter_mut()
-            .for_each(|(_, client)| self.rt.block_on(client.close()));
+    async fn close(&mut self) {
+        for (_, client) in self.clients.iter_mut() {
+            client.close().await;
+        }
 
-        self.spectators
-            .iter_mut()
-            .for_each(|client| self.rt.block_on(client.close()));
+        for client in self.spectators.iter_mut() {
+            client.close().await;
+        }
     }
 
-    fn broadcast_spectators(&mut self, message: GameMessage) {
-        self.spectators
-            .iter_mut()
-            .for_each(|client| self.rt.block_on(client.send_message(message.clone())));
+    async fn broadcast_spectators(&mut self, message: GameMessage) {
+        for client in self.spectators.iter_mut() {
+            client.send_message(message.clone()).await;
+        }
     }
 }
 
@@ -96,11 +93,6 @@ impl WsHandler {
     }
 
     pub fn new_with_players(players: Vec<WsClient>, spectators: Vec<WsClient>) -> Self {
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .expect("Failed to get a reference to the current runtime");
-
         Self {
             clients: players
                 .into_iter()
@@ -108,7 +100,6 @@ impl WsHandler {
                 .map(|(id, client)| (id as PlayerId, client))
                 .collect(),
             spectators,
-            rt,
         }
     }
 
@@ -148,32 +139,44 @@ impl WsClient {
         }
     }
 
+    /// Cancelation safe
     pub async fn receive_message<ResponseMessage: DeserializeOwned>(
         &mut self,
+        timeout_millis: u64,
     ) -> Option<ResponseMessage> {
-        let message = match self.incoming.next().await {
-            None => {
-                eprintln!("Got empty from 'next'?");
-                return None;
-            }
-            Some(Ok(mess)) => mess,
-            Some(Err(e)) => {
-                eprintln!("Failed to read message, error: {e}");
-                return None;
-            }
-        };
+        let response =
+            tokio::time::timeout(Duration::from_millis(timeout_millis), self.incoming.next()).await;
+        self.handle_message(response).await
+    }
 
-        self.parse_message(message).await
+    pub async fn receive_message_until<ResponseMessage: DeserializeOwned>(
+        &mut self,
+        timeout_at: Instant,
+    ) -> Option<ResponseMessage> {
+        let response = tokio::time::timeout_at(timeout_at, self.incoming.next()).await;
+        self.handle_message(response).await
     }
 
     /// Cancelation safe
-    pub async fn try_receive_message<ResponseMessage: DeserializeOwned>(
+    async fn handle_message<ResponseMessage: DeserializeOwned>(
         &mut self,
+        response: Result<
+            Option<Result<Message, tokio_tungstenite::tungstenite::Error>>,
+            tokio::time::error::Elapsed,
+        >,
     ) -> Option<ResponseMessage> {
-        let message = match self.incoming.next().await? {
-            Ok(m) => m,
-            Err(e) => {
+        let message = match response {
+            Ok(Some(Ok(mess))) => mess,
+            Ok(Some(Err(e))) => {
                 eprintln!("Failed to read message, error: {e}");
+                return None;
+            }
+            Ok(None) => {
+                eprintln!("Got empty from 'next'?");
+                return None;
+            }
+            Err(_) => {
+                eprintln!("No response within timelimit");
                 return None;
             }
         };

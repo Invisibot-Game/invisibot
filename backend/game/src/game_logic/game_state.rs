@@ -191,16 +191,11 @@ impl GameState {
 
                 // Also insert their current position in case their move fails.
                 possible_collisions.push(player.get_pos().clone());
-            } else {
-                let handled_coord = next_round_players
-                    .get(id)
-                    .ok_or(GameError::InvalidGameState(format!(
-                        "Player neither in requested directions nor in next_round_players {id}"
-                    )))?
-                    .get_pos();
-
+            } else if let Some(player) = next_round_players.get(id) {
                 // The player is already handled, insert their final coordinate.
-                possible_collisions.push(handled_coord.clone());
+                possible_collisions.push(player.get_pos().clone());
+            } else {
+                // The player disconnected.
             };
         }
 

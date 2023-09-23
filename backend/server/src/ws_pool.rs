@@ -1,7 +1,7 @@
-use std::{collections::HashMap, ops::Add};
-use tokio::{net::TcpListener, select};
+use futures::{stream::FuturesUnordered, StreamExt};
+use std::{collections::HashMap, ops::Add, time::Duration};
+use tokio::{net::TcpListener, select, time::Instant};
 
-use chrono::{DateTime, Duration, Utc};
 use invisibot_client_api::{
     connect_response::{ClientType, ConnectResponse},
     game_message::GameMessage,
@@ -24,7 +24,7 @@ pub struct WsPoolManager {
 }
 
 pub struct NewConnection {
-    timeout_at: DateTime<Utc>,
+    timeout_at: Instant,
     client: WsClient,
 }
 
@@ -103,7 +103,7 @@ impl WsPoolManager {
         }
     }
 
-    async fn timeout_at(&mut self) -> DateTime<Utc> {
+    async fn timeout_at(&mut self) -> Instant {
         let millis = match self
             .pg_handler
             .get_config_u32(CLIENT_CONNECT_RESPONSE_TIMEOUT_MILLIS_CONFIG_KEY)
@@ -116,7 +116,8 @@ impl WsPoolManager {
             }
         };
 
-        Utc::now().add(Duration::milliseconds(millis as i64))
+        let now = Instant::now();
+        now.add(Duration::from_millis(millis.into()))
     }
 
     async fn handle_new_client_response(
@@ -237,17 +238,24 @@ impl GameSetup {
 }
 
 async fn check_new_connections(new_connections: &mut Vec<NewConnection>) -> NewConnectionResult {
-    let now = Utc::now();
-    for (index, conn) in new_connections.iter_mut().enumerate() {
-        match conn.client.try_receive_message().await {
+    let mut futures = new_connections
+        .iter_mut()
+        .enumerate()
+        .map(|(index, conn)| async move {
+            (
+                index,
+                conn.client.receive_message_until(conn.timeout_at).await,
+            )
+        })
+        .collect::<FuturesUnordered<_>>();
+
+    while let Some((index, resp)) = futures.next().await {
+        match resp {
             Some(m) => return NewConnectionResult::Responded { index, response: m },
             None => {
-                if conn.timeout_at < now {
-                    return NewConnectionResult::TimedOut { index };
-                }
-                continue;
+                return NewConnectionResult::TimedOut { index };
             }
-        };
+        }
     }
 
     NewConnectionResult::Nothing

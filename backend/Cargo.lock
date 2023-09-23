@@ -1095,6 +1095,7 @@ dependencies = [
 name = "invisibot_websocket_api"
 version = "0.1.0"
 dependencies = [
+ "futures",
  "futures-util",
  "invisibot_client_api",
  "invisibot_common",
