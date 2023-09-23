@@ -24,7 +24,7 @@ pub struct WsHandler {
     spectators: Vec<WsClient>,
 }
 
-const DEFAULT_CLIENT_TIMEOUT_MILLIS: u64 = 400;
+const DEFAULT_NEW_CLIENT_TIMEOUT_MILLIS: u64 = 400;
 
 #[async_trait]
 impl ClientHandler for WsHandler {
@@ -52,7 +52,9 @@ impl ClientHandler for WsHandler {
         &mut self,
     ) -> HashMap<PlayerId, Option<ResponseMessage>> {
         futures::future::join_all(self.clients.iter_mut().map(|(id, client)| async {
-            let response = client.receive_message(DEFAULT_CLIENT_TIMEOUT_MILLIS).await;
+            let response = client
+                .receive_message(DEFAULT_NEW_CLIENT_TIMEOUT_MILLIS)
+                .await;
             (*id, response)
         }))
         .await
