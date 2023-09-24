@@ -1,14 +1,19 @@
 use futures::{stream::FuturesUnordered, StreamExt};
-use std::{collections::HashMap, ops::Add, time::Duration};
-use tokio::{net::TcpListener, select, time::Instant};
+use invisibot_game::game;
+use std::{collections::HashMap, net::SocketAddr, ops::Add, time::Duration};
+use tokio::{
+    io,
+    net::{TcpListener, TcpStream},
+    select,
+    time::Instant,
+};
 
 use invisibot_client_api::{
     connect_response::{ClientType, ConnectResponse},
     game_message::GameMessage,
 };
 use invisibot_common::GameId;
-use invisibot_game::game::Game;
-use invisibot_postgres::postgres_handler::PostgresHandler;
+use invisibot_postgres::postgres_handler::{self, PostgresHandler};
 use invisibot_websocket_api::{WsClient, WsHandler};
 use tokio::task::{self, yield_now};
 
@@ -61,46 +66,33 @@ impl WsPoolManager {
         loop {
             let server = &self.server;
             let new_connections = &mut self.new_connections;
+
             select! {
-                conn = server.accept() => {
-                    let mut client = match conn {
-                        Ok((stream, _)) => {
-                            println!("Client connecting!");
-                            WsClient::accept(stream).await
-                        }
-                        Err(e) => {
-                            panic!("An unexpected error occurred whilst listening for clients, err {e}")
-                        }
-                    };
-
-                    // let mut client = self.accept_client().await;
-                    client.send_message(GameMessage::ClientHello).await;
-                    let timeout_at = self.timeout_at().await;
-
-                    self.new_connections
-                        .push(NewConnection { timeout_at, client });
-                }
-                result = check_new_connections(new_connections) => {
-                    match result {
-                        NewConnectionResult::Nothing => {},
-                        NewConnectionResult::Responded { index, response } => {
-                            let conn = self.new_connections.remove(index);
-                            self.handle_new_client_response(conn.client, response)
-                                .await;
-                        }
-                        NewConnectionResult::TimedOut { index } => {
-                            let mut conn = self.new_connections.remove(index);
-                            conn.client
-                                .send_text(String::from("Timeout waiting for connection response"))
-                                .await;
-                            conn.client.close().await;
-                        }
-                    }
-                }
+                conn = server.accept() => self.handle_new_client(conn).await,
+                result = check_new_connections(new_connections) => self.handle_new_connection_response(result).await,
             }
 
             yield_now().await;
         }
+    }
+
+    async fn handle_new_client(&mut self, conn: io::Result<(TcpStream, SocketAddr)>) {
+        let mut client = match conn {
+            Ok((stream, _)) => {
+                println!("Client connecting!");
+                WsClient::accept(stream).await
+            }
+            Err(e) => {
+                panic!("An unexpected error occurred whilst listening for clients, err {e}")
+            }
+        };
+
+        // let mut client = self.accept_client().await;
+        client.send_message(GameMessage::ClientHello).await;
+        let timeout_at = self.timeout_at().await;
+
+        self.new_connections
+            .push(NewConnection { timeout_at, client });
     }
 
     async fn timeout_at(&mut self) -> Instant {
@@ -118,6 +110,23 @@ impl WsPoolManager {
 
         let now = Instant::now();
         now.add(Duration::from_millis(millis.into()))
+    }
+
+    async fn handle_new_connection_response(&mut self, result: NewConnectionResult) {
+        match result {
+            NewConnectionResult::Nothing => {}
+            NewConnectionResult::Responded { index, response } => {
+                let conn = self.new_connections.remove(index);
+                self.handle_new_client_response(conn.client, response).await;
+            }
+            NewConnectionResult::TimedOut { index } => {
+                let mut conn = self.new_connections.remove(index);
+                conn.client
+                    .send_text(String::from("Timeout waiting for connection response"))
+                    .await;
+                conn.client.close().await;
+            }
+        }
     }
 
     async fn handle_new_client_response(
@@ -153,34 +162,7 @@ impl WsPoolManager {
             };
 
             if let Some(game) = game {
-                if game.started_at.is_some() {
-                    client.send_message(GameMessage::GameStarted).await;
-                    client.close().await;
-                    return;
-                }
-
-                let mut players = vec![];
-                let mut spectators = vec![];
-
-                match connect_response.client_type {
-                    ClientType::Player => {
-                        players.push(client);
-                    }
-                    ClientType::Spectator => {
-                        spectators.push(client);
-                    }
-                }
-
-                self.games.insert(
-                    connect_response.game_id,
-                    GameSetup {
-                        max_players: game.num_players,
-                        curr_players: players,
-                        spectators,
-                    },
-                );
-
-                (game.num_players as usize, 1)
+                self.add_player_to_game(game).await;
             } else {
                 // Inform the client that there is no such game.
                 client
@@ -205,6 +187,40 @@ impl WsPoolManager {
             task::spawn(play_game(game_id, setup, game_pg_handler));
         }
     }
+
+    async fn add_player_to_game(
+        &mut self,
+        game: postgres_handler::Game,
+        client: &mut WsClient,
+    ) -> (usize, usize) {
+        if game.started_at.is_some() {
+            client.send_message(GameMessage::GameStarted).await;
+            client.close().await;
+        }
+
+        let mut players = vec![];
+        let mut spectators = vec![];
+
+        match connect_response.client_type {
+            ClientType::Player => {
+                players.push(client);
+            }
+            ClientType::Spectator => {
+                spectators.push(client);
+            }
+        }
+
+        self.games.insert(
+            connect_response.game_id,
+            GameSetup {
+                max_players: game.num_players,
+                curr_players: players,
+                spectators,
+            },
+        );
+
+        (game.num_players as usize, 1)
+    }
 }
 
 async fn play_game(game_id: GameId, setup: GameSetup, pg_handler: PostgresHandler) {
@@ -214,7 +230,7 @@ async fn play_game(game_id: GameId, setup: GameSetup, pg_handler: PostgresHandle
     );
     let ws_handler = WsHandler::new_with_players(setup.curr_players, setup.spectators);
     let player_ids = ws_handler.get_player_ids();
-    let mut game = Game::new(ws_handler, pg_handler, game_id, player_ids)
+    let mut game = game::Game::new(ws_handler, pg_handler, game_id, player_ids)
         .await
         .expect("Failed to create new game");
     game.run_game().await.expect("Failed to run game");
